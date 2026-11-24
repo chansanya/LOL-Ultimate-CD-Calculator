@@ -323,6 +323,18 @@
             </div>
           </div>
 
+          <!-- 帝国指令寒冰控制协同开关 -->
+          <div class="mandate-cc-banner" id="mandate-cc-box" hidden>
+            <label class="aug-check-label" for="chk-mandate-cc">
+              <input type="checkbox" id="chk-mandate-cc" class="hex-checkbox" checked>
+              <div>
+                <span class="banner-title text-cyan">📜 帝国指令 · 寒冰控制特化 +20 技能急速</span>
+                <span class="banner-sub">寒冰大招附带定身控制效果，完美触发协同特化被动，额外获得 20 技能急速！</span>
+              </div>
+            </label>
+            <span class="aug-pill-badge tag-cyan">+20 协同急速</span>
+          </div>
+
           <!-- 装备库分类选项卡 -->
           <div class="item-cat-tabs" id="item-category-tabs">
             <button type="button" class="item-tab active" data-cat="all">全部装备</button>
@@ -515,6 +527,10 @@
         <div class="breakdown-row">
           <span class="row-source"><i class="dot-indicator dot-recursion"></i>无限循环往复 · 基准+60 击杀+3</span>
           <strong class="row-val font-mono" id="breakdown-recursion-val">+0.0 AH</strong>
+        </div>
+        <div class="breakdown-row" id="breakdown-mandate-row" hidden>
+          <span class="row-source"><i class="dot-indicator dot-mandate"></i>帝国指令 · 寒冰控制特化</span>
+          <strong class="row-val font-mono text-cyan" id="breakdown-mandate-val">+20.0 AH</strong>
         </div>
         <div class="breakdown-row ult-breakdown-row" id="breakdown-malignance-row" hidden>
           <span class="row-source"><i class="dot-indicator dot-malignance"></i>【残疫】专属终极技能急速</span>

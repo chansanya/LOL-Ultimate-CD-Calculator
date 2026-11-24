@@ -658,6 +658,18 @@ button { cursor: pointer; }
   width: 100%;
   gap: 12px;
 }
+
+/* 帝国指令协同控制横幅 */
+.mandate-cc-banner {
+  background: rgba(0, 242, 255, 0.08);
+  border: 1px solid rgba(0, 242, 255, 0.35);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .torch-stepper {
   display: flex;
   align-items: center;
@@ -1266,6 +1278,7 @@ button { cursor: pointer; }
 .dot-shrink { background: #38bdf8; }
 .dot-recursion { background: #a855f7; }
 .dot-malignance { background: var(--purple); }
+.dot-mandate { background: #00f2ff; box-shadow: 0 0 6px rgba(0, 242, 255, 0.6); }
 
 .row-val {
   font-size: 12px;

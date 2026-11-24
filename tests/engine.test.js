@@ -479,6 +479,20 @@ describe('海克斯大乱斗强化与装备联动计算', () => {
     assert.equal(statsAdapt.totalAd, 0); // AD 被转化为 AP
     // AP = 100 * 1.15 = 115
     assert.equal(statsAdapt.totalAp, 115);
+
+    // 装备帝国指令 (60 AP, 20 AH)：寒冰大招定身控制触发协同特化，额外提供 20 AH
+    const statsMandateOn = calculateEquipmentStats(['imperialMandate'], { mandateCcActive: true });
+    assert.equal(statsMandateOn.hasImperialMandate, true);
+    assert.equal(statsMandateOn.mandateCcActive, true);
+    assert.equal(statsMandateOn.mandateCcBonus, 20);
+    assert.equal(statsMandateOn.baseAh, 40); // 20 基础 + 20 控制特化协同
+    assert.equal(statsMandateOn.totalAp, 60);
+
+    // 未触发控制协同：仅提供基础 20 AH
+    const statsMandateOff = calculateEquipmentStats(['imperialMandate'], { mandateCcActive: false });
+    assert.equal(statsMandateOff.mandateCcActive, false);
+    assert.equal(statsMandateOff.mandateCcBonus, 0);
+    assert.equal(statsMandateOff.baseAh, 20);
   });
 
   test('海斗锻体额外属性：额外法强与攻击力同样受到帽子火炬与符文的被动放大增强', () => {

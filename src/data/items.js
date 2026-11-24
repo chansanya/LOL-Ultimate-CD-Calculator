@@ -93,8 +93,9 @@ export const ITEMS = {
     ah: 20,
     ap: 60,
     as: 0,
-    tags: ['高性价比', '急速协同'],
-    note: '官方 14.23：+60 AP，+20 AH，+125% 法力回复。减速定身挂标记，友军集火造成百分比伤害。',
+    mandateCcAh: 20,
+    tags: ['高性价比', '急速协同', '寒冰控制特化'],
+    note: '官方 14.23：+60 AP，+20 AH。寒冰大招附带定身控制效果，完美触发协同特化被动，额外获得 20 技能急速。',
   },
   horizonFocus: {
     id: 'horizonFocus',

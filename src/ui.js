@@ -173,6 +173,7 @@ function renderItemsPicker() {
     const isCollapsed = isAllItemsCollapsed || collapsedItemIds.has(item.id);
     const statTags = [];
     if (item.ah) statTags.push(`<span class="stat-tag tag-ah">+${item.ah} AH</span>`);
+    if (item.mandateCcAh) statTags.push(`<span class="stat-tag tag-ah">控制协同 +${item.mandateCcAh} AH</span>`);
     if (item.as) statTags.push(`<span class="stat-tag tag-as">+${item.as}% 攻速</span>`);
     if (item.ap) statTags.push(`<span class="stat-tag tag-ap">+${item.ap} AP</span>`);
     if (item.ultAh) statTags.push(`<span class="stat-tag tag-ult">+${item.ultAh} 大招AH</span>`);
@@ -275,12 +276,15 @@ function update() {
     const anvilAp = Math.max(0, Number($('num-extra-ap')?.value) || 0);
     const anvilAd = Math.max(0, Number($('num-extra-ad')?.value) || 0);
 
+    const isMandateCcActive = $('chk-mandate-cc') ? $('chk-mandate-cc').checked : (heroKey === 'ashe');
+
     const equipStats = calculateEquipmentStats(selectedItems, {
       lichBaneActive: isLichActive,
       adaptActive: isAdaptActive,
       heavyCrownActive: isCrownActive,
       heavyCrownStacks: crownStacks,
       torchStacks,
+      mandateCcActive: isMandateCcActive,
       anvilAs,
       anvilAp,
       anvilAd,
@@ -295,6 +299,11 @@ function update() {
       if ($('disp-torch-ap-bonus')) {
         $('disp-torch-ap-bonus').textContent = `+${torchStacks * 4}% 法强`;
       }
+    }
+
+    // 显示/隐藏帝国指令寒冰控制特化开关
+    if ($('mandate-cc-box')) {
+      $('mandate-cc-box').hidden = !equipStats.hasImperialMandate;
     }
 
     // 更新装备汇总条
@@ -378,6 +387,12 @@ function update() {
     $('breakdown-recursion-val').textContent = `+${recursionHaste.toFixed(1)} AH`;
     $('breakdown-malignance-val').textContent = `+${equipStats.ultAh.toFixed(1)} AH`;
     $('breakdown-malignance-row').hidden = equipStats.ultAh <= 0;
+    if ($('breakdown-mandate-row')) {
+      $('breakdown-mandate-row').hidden = !equipStats.mandateCcActive;
+      if ($('breakdown-mandate-val')) {
+        $('breakdown-mandate-val').textContent = `+${(equipStats.mandateCcBonus || 0).toFixed(1)} AH`;
+      }
+    }
     $('breakdown-total-val').textContent = `${Math.round(totalHaste)} AH`;
     $('breakdown-ult-val').textContent = `${Math.round(totalUltHaste)} AH`;
 
@@ -561,8 +576,10 @@ function initEvents() {
       if (heroKey === 'ashe') {
         rankA = 2;
         rankB = 2;
+        if ($('chk-mandate-cc')) $('chk-mandate-cc').checked = true;
       } else {
         rankUlt = 3;
+        if ($('chk-mandate-cc')) $('chk-mandate-cc').checked = false;
       }
       renderHeroUI();
       update();
@@ -588,7 +605,7 @@ function initEvents() {
   });
 
   // 海克斯强化与装备被动事件
-  ['chk-purist', 'chk-eureka', 'chk-shrink', 'chk-recursion', 'chk-archmage', 'chk-lich-spellblade', 'chk-adapt', 'chk-crown'].forEach((id) => {
+  ['chk-purist', 'chk-eureka', 'chk-shrink', 'chk-recursion', 'chk-archmage', 'chk-lich-spellblade', 'chk-adapt', 'chk-crown', 'chk-mandate-cc'].forEach((id) => {
     $(id)?.addEventListener('change', update);
   });
   ['num-extra-as', 'num-extra-ap', 'num-extra-ad', 'num-shrink-stacks', 'num-recursion-kills', 'num-torch-stacks', 'num-crown-stacks'].forEach((id) => {
@@ -707,6 +724,7 @@ function initEvents() {
     if ($('chk-adapt')) $('chk-adapt').checked = false;
     if ($('chk-crown')) $('chk-crown').checked = false;
     if ($('chk-lich-spellblade')) $('chk-lich-spellblade').checked = false;
+    if ($('chk-mandate-cc')) $('chk-mandate-cc').checked = true;
     if ($('num-extra-as')) $('num-extra-as').value = '0';
     if ($('num-extra-ap')) $('num-extra-ap').value = '0';
     if ($('num-extra-ad')) $('num-extra-ad').value = '0';

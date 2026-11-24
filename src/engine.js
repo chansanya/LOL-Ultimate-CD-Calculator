@@ -138,6 +138,7 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
   let hasRabadon = false;
   let hasLichBane = false;
   let hasTorch = false;
+  let hasImperialMandate = false;
 
   for (const id of selectedItemIds) {
     const item = ITEMS[id];
@@ -150,6 +151,15 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
     if (item.isRabadon) hasRabadon = true;
     if (item.hasTorch || id === 'blackfireTorch') hasTorch = true;
     if (id === 'lichBane') hasLichBane = true;
+    if (id === 'imperialMandate') hasImperialMandate = true;
+  }
+
+  // 帝国指令被动：寒冰大招带定身控制效果触发协同，额外获得 +20 技能急速
+  let mandateCcBonus = 0;
+  const mandateCcActive = hasImperialMandate && (options.mandateCcActive !== false);
+  if (mandateCcActive) {
+    mandateCcBonus = 20;
+    baseAh += mandateCcBonus;
   }
 
   // 巫妖之祸咒刃被动：释放技能获得 +50% 攻速
@@ -221,6 +231,9 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
     hasLichBane,
     hasTorch,
     torchStacks,
+    hasImperialMandate,
+    mandateCcActive,
+    mandateCcBonus,
     apMultiplier,
     heavyCrownActive,
     heavyCrownStacks,
