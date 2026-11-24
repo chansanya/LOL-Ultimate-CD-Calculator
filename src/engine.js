@@ -131,6 +131,7 @@ export function calculateMayhemHaste({
 /** 计算已选装备提供的基础属性与专属联动 */
 export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
   let baseAh = 0;
+  let basicAh = 0;
   let rawAp = 0;
   let rawAd = 0;
   let rawAs = 0;
@@ -144,6 +145,7 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
     const item = ITEMS[id];
     if (!item) continue;
     baseAh += item.ah || 0;
+    basicAh += item.basicAh || 0;
     rawAp += item.ap || 0;
     rawAd += item.ad || 0;
     rawAs += item.as || 0;
@@ -154,9 +156,10 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
     if (id === 'imperialMandate') hasImperialMandate = true;
   }
 
-  // 帝国指令被动：寒冰大招带定身控制效果触发协同，额外获得 +20 技能急速
+  // 帝国指令被动：寒冰大招带定身控制效果触发协同，额外获得 +20 技能急速。死歌与船长大招不带控制，不能触发。
   let mandateCcBonus = 0;
-  const mandateCcActive = hasImperialMandate && (options.mandateCcActive !== false);
+  const isCcHero = options.heroKey ? options.heroKey === 'ashe' : (options.isAshe !== false);
+  const mandateCcActive = hasImperialMandate && isCcHero && (options.mandateCcActive !== false);
   if (mandateCcActive) {
     mandateCcBonus = 20;
     baseAh += mandateCcBonus;
@@ -211,6 +214,7 @@ export function calculateEquipmentStats(selectedItemIds = [], options = {}) {
 
   return {
     baseAh,
+    basicAh,
     rawAp,
     anvilAp,
     totalRawAp: rawAp + anvilAp,

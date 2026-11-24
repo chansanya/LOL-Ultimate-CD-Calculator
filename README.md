@@ -1,4 +1,6 @@
-# 海克斯大招流计算器 (LOL Ultimate CD Calculator)
+# 居家办公计算器 / 海克斯大招流计算器 (LOL Ultimate CD Calculator)
+
+在线体验：👉 **[https://lol.10085.fun/](https://lol.10085.fun/)**
 
 英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript，基于 **Cloudflare Pages 全球无限制静态托管**，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
 

@@ -18,7 +18,7 @@ let heroKey = 'ashe';
 let rankA = 2; // 艾希 E
 let rankB = 2; // 艾希 R
 let rankUlt = 3; // 死歌 / 船长 默认 3 级大招
-let selectedItems = ['nashor']; // 初始默认带纳什之牙体验联动
+let selectedItems = [];
 let activeItemCategory = 'all';
 let isAllItemsCollapsed = false;
 const collapsedItemIds = new Set();
@@ -173,9 +173,11 @@ function renderItemsPicker() {
     const isCollapsed = isAllItemsCollapsed || collapsedItemIds.has(item.id);
     const statTags = [];
     if (item.ah) statTags.push(`<span class="stat-tag tag-ah">+${item.ah} AH</span>`);
+    if (item.basicAh) statTags.push(`<span class="stat-tag tag-basic">+${item.basicAh} 基础AH</span>`);
     if (item.mandateCcAh) statTags.push(`<span class="stat-tag tag-ah">控制协同 +${item.mandateCcAh} AH</span>`);
     if (item.as) statTags.push(`<span class="stat-tag tag-as">+${item.as}% 攻速</span>`);
     if (item.ap) statTags.push(`<span class="stat-tag tag-ap">+${item.ap} AP</span>`);
+    if (item.ad) statTags.push(`<span class="stat-tag tag-ad">+${item.ad} AD</span>`);
     if (item.ultAh) statTags.push(`<span class="stat-tag tag-ult">+${item.ultAh} 大招AH</span>`);
 
     return `
@@ -283,9 +285,11 @@ function update() {
     const anvilAp = Math.max(0, Number($('num-extra-ap')?.value) || 0);
     const anvilAd = Math.max(0, Number($('num-extra-ad')?.value) || 0);
 
-    const isMandateCcActive = $('chk-mandate-cc') ? $('chk-mandate-cc').checked : (heroKey === 'ashe');
+    const isCcHero = heroKey === 'ashe';
+    const isMandateCcActive = isCcHero && ($('chk-mandate-cc') ? $('chk-mandate-cc').checked : true);
 
     const equipStats = calculateEquipmentStats(selectedItems, {
+      heroKey,
       lichBaneActive: isLichActive,
       adaptActive: isAdaptActive,
       heavyCrownActive: isCrownActive,
@@ -308,9 +312,9 @@ function update() {
       }
     }
 
-    // 显示/隐藏帝国指令寒冰控制特化开关
+    // 显示/隐藏帝国指令寒冰控制特化开关（死歌与船长大招无控制，不显示亦不触发）
     if ($('mandate-cc-box')) {
-      $('mandate-cc-box').hidden = !equipStats.hasImperialMandate;
+      $('mandate-cc-box').hidden = !equipStats.hasImperialMandate || !isCcHero;
     }
 
     // 更新装备汇总条
@@ -395,9 +399,15 @@ function update() {
     $('breakdown-malignance-val').textContent = `+${equipStats.ultAh.toFixed(1)} AH`;
     $('breakdown-malignance-row').hidden = equipStats.ultAh <= 0;
     if ($('breakdown-mandate-row')) {
-      $('breakdown-mandate-row').hidden = !equipStats.mandateCcActive;
+      $('breakdown-mandate-row').hidden = !equipStats.mandateCcActive || !isCcHero;
       if ($('breakdown-mandate-val')) {
         $('breakdown-mandate-val').textContent = `+${(equipStats.mandateCcBonus || 0).toFixed(1)} AH`;
+      }
+    }
+    if ($('breakdown-basic-row')) {
+      $('breakdown-basic-row').hidden = equipStats.basicAh <= 0;
+      if ($('breakdown-basic-val')) {
+        $('breakdown-basic-val').textContent = `+${equipStats.basicAh.toFixed(1)} AH`;
       }
     }
     $('breakdown-total-val').textContent = `${Math.round(totalHaste)} AH`;
@@ -419,8 +429,8 @@ function update() {
         baseA,
         baseB,
         haste: totalHaste,
-        extraHasteA: 0,
-        extraHasteB: equipStats.ultAh,
+        extraHasteA: equipStats.basicAh || 0,
+        extraHasteB: equipStats.ultAh || 0,
         archmage: archRatio,
         sorcerer: bonusCdr,
       });
@@ -433,7 +443,11 @@ function update() {
 
       $('disp-total-cdr-badge').textContent = `综合 CDR: ${(calcResult.cdrA * 100).toFixed(1)}%`;
       if ($('disp-entry-sub')) {
-        $('disp-entry-sub').textContent = `当前常规 ${Math.round(totalHaste)} AH · 大招 ${Math.round(totalUltHaste)} AH · 综合 CDR ${(calcResult.cdrA * 100).toFixed(1)}%`;
+        const parts = [];
+        if (equipStats.basicAh > 0) parts.push(`E基础 +${equipStats.basicAh} AH`);
+        if (equipStats.ultAh > 0) parts.push(`大招 +${Math.round(totalUltHaste)} AH`);
+        const partText = parts.length > 0 ? ` · ${parts.join(' · ')}` : ` · 大招 ${Math.round(totalUltHaste)} AH`;
+        $('disp-entry-sub').textContent = `当前常规 ${Math.round(totalHaste)} AH${partText} · 综合 CDR ${(calcResult.cdrA * 100).toFixed(1)}%`;
       }
 
       if (!archmage) {
@@ -441,7 +455,12 @@ function update() {
         $('label-stat-1').textContent = '当前技能急速 / 大招急速';
         $('val-stat-1').innerHTML = `<span class="dual-haste">${Math.round(totalHaste)} / ${Math.round(totalUltHaste)}</span><span class="number-unit">AH</span>`;
         $('sub-stat-1').className = 'block-sub text-muted';
-        $('sub-stat-1').textContent = equipStats.ultAh > 0 ? `常规 ${Math.round(totalHaste)} AH · 大招含专属 +${equipStats.ultAh} AH` : '常规急速与大招急速一致';
+        const parts = [];
+        if (equipStats.basicAh > 0) parts.push(`E基础专属 +${equipStats.basicAh} AH`);
+        if (equipStats.ultAh > 0) parts.push(`大招专属 +${equipStats.ultAh} AH`);
+        $('sub-stat-1').textContent = parts.length > 0
+          ? `常规 ${Math.round(totalHaste)} AH · ${parts.join(' · ')}`
+          : '常规急速与大招急速一致';
 
         $('label-stat-2').textContent = 'E 鹰击长空 最终冷却';
         $('val-stat-2').innerHTML = `${calcResult.cdA.toFixed(1)}<span class="number-unit">s</span>`;
@@ -528,9 +547,13 @@ function update() {
       $('label-stat-1').textContent = '当前技能急速 / 大招急速';
       $('val-stat-1').innerHTML = `<span class="dual-haste">${Math.round(totalHaste)} / ${Math.round(ultHaste)}</span><span class="number-unit">AH</span>`;
       $('sub-stat-1').className = 'block-sub text-muted';
-      $('sub-stat-1').textContent = equipStats.ultAh > 0
-        ? `常规 ${Math.round(totalHaste)} AH · 大招加算 +${equipStats.ultAh} AH`
-        : `常规急速 ${Math.round(totalHaste)} AH · 大招同享加算`;
+      if (equipStats.ultAh > 0) {
+        $('sub-stat-1').textContent = `常规 ${Math.round(totalHaste)} AH · 大招加算 +${equipStats.ultAh} AH`;
+      } else if (equipStats.basicAh > 0) {
+        $('sub-stat-1').textContent = `常规 ${Math.round(totalHaste)} AH · 朔极之矛仅加基础小技能，大招不生效`;
+      } else {
+        $('sub-stat-1').textContent = `常规急速 ${Math.round(totalHaste)} AH · 大招同享加算`;
+      }
 
       // 指标 2 (核心主角)：R 技能实际冷却
       $('label-stat-2').textContent = `R ${hero.skills.R.name} 最终冷却`;
@@ -721,24 +744,24 @@ function initEvents() {
     rankA = 2;
     rankB = 2;
     rankUlt = 3;
-    selectedItems = ['nashor'];
+    selectedItems = [];
     activeItemCategory = 'all';
-    $('chk-purist').checked = true;
+    $('chk-purist').checked = false;
     $('chk-eureka').checked = false;
     $('chk-shrink').checked = false;
     $('chk-recursion').checked = false;
-    $('chk-archmage').checked = true;
+    $('chk-archmage').checked = false;
     if ($('chk-adapt')) $('chk-adapt').checked = false;
     if ($('chk-crown')) $('chk-crown').checked = false;
     if ($('chk-lich-spellblade')) $('chk-lich-spellblade').checked = false;
-    if ($('chk-mandate-cc')) $('chk-mandate-cc').checked = true;
+    if ($('chk-mandate-cc')) $('chk-mandate-cc').checked = false;
     if ($('num-extra-as')) $('num-extra-as').value = '0';
     if ($('num-extra-ap')) $('num-extra-ap').value = '0';
     if ($('num-extra-ad')) $('num-extra-ad').value = '0';
     $('num-shrink-stacks').value = '0';
     $('num-recursion-kills').value = '0';
     if ($('num-crown-stacks')) $('num-crown-stacks').value = '0';
-    if ($('num-torch-stacks')) $('num-torch-stacks').value = '3';
+    if ($('num-torch-stacks')) $('num-torch-stacks').value = '0';
 
     document.querySelectorAll('.item-tab').forEach((t) => {
       t.classList.toggle('active', t.dataset.cat === 'all');

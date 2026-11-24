@@ -991,8 +991,10 @@ button { cursor: pointer; }
   background: rgba(0, 0, 0, 0.3);
 }
 .stat-tag.tag-ah { color: var(--cyan); border: 1px solid rgba(0, 242, 255, 0.2); }
+.stat-tag.tag-basic { color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
 .stat-tag.tag-as { color: var(--emerald-dim); border: 1px solid rgba(16, 185, 129, 0.2); }
 .stat-tag.tag-ap { color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.2); }
+.stat-tag.tag-ad { color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
 .stat-tag.tag-ult { color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.2); }
 
 .item-card-note {
@@ -1378,6 +1380,7 @@ button { cursor: pointer; }
 .dot-recursion { background: #a855f7; }
 .dot-malignance { background: var(--purple); }
 .dot-mandate { background: #00f2ff; box-shadow: 0 0 6px rgba(0, 242, 255, 0.6); }
+.dot-shojin { background: #38bdf8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6); }
 
 .row-val {
   font-size: 13px;

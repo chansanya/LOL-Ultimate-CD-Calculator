@@ -443,10 +443,10 @@ describe('海克斯大乱斗强化与装备联动计算', () => {
   });
 
   test('装备库属性汇总：残疫、纳什、帽子与咒刃激活联动', () => {
-    // 装备纳什(15 AH, 80 AP, 50% AS) + 残疫(15 AH, 85 AP, 20 Ult AH) + 巫妖(10 AH, 115 AP)
+    // 装备纳什(15 AH, 80 AP, 50% AS) + 残疫(15 AH, 90 AP, 20 Ult AH) + 巫妖(10 AH, 100 AP)
     const stats1 = calculateEquipmentStats(['nashor', 'malignance', 'lichBane'], { lichBaneActive: false });
     assert.equal(stats1.baseAh, 40); // 15 + 15 + 10
-    assert.equal(stats1.totalAp, 280); // 80 + 85 + 115
+    assert.equal(stats1.totalAp, 270); // 80 + 90 + 100
     assert.equal(stats1.totalAs, 50); // 50% from nashor
     assert.equal(stats1.ultAh, 20); // 20 from malignance
 
@@ -468,10 +468,10 @@ describe('海克斯大乱斗强化与装备联动计算', () => {
     // 80 * 1.12 = 89.6 -> 90
     assert.equal(statsTorch.totalAp, 90);
 
-    // 装备大天使之杖(25 AH, 80 AP) + 兰德里的折磨(70 AP, 0 AH)
+    // 装备大天使之杖(25 AH, 70 AP) + 兰德里的折磨(60 AP, 0 AH)
     const statsMage = calculateEquipmentStats(['archangelStaff', 'liandry']);
     assert.equal(statsMage.baseAh, 25);
-    assert.equal(statsMage.totalAp, 150);
+    assert.equal(statsMage.totalAp, 130);
 
     // 装备公理圆弧(55 AD) + 朔极之矛(45 AD) = 100 AD
     // 开启物理转魔法：100 AD 100% 转化为 100 AP，且额外提升 15% AP
@@ -480,19 +480,30 @@ describe('海克斯大乱斗强化与装备联动计算', () => {
     // AP = 100 * 1.15 = 115
     assert.equal(statsAdapt.totalAp, 115);
 
-    // 装备帝国指令 (60 AP, 20 AH)：寒冰大招定身控制触发协同特化，额外提供 20 AH
-    const statsMandateOn = calculateEquipmentStats(['imperialMandate'], { mandateCcActive: true });
+    // 装备朔极之矛：不加大招急速，仅提供 25 基础技能急速 (basicAh)
+    const statsShojin = calculateEquipmentStats(['shojin']);
+    assert.equal(statsShojin.baseAh, 0); // 通用急速为 0
+    assert.equal(statsShojin.basicAh, 25); // 基础小技能急速 +25
+    assert.equal(statsShojin.ultAh, 0); // 大招急速 +0
+
+    // 装备帝国指令 (60 AP, 15 AH)：寒冰大招定身控制触发协同特化，额外提供 20 AH
+    const statsMandateOn = calculateEquipmentStats(['imperialMandate'], { heroKey: 'ashe', mandateCcActive: true });
     assert.equal(statsMandateOn.hasImperialMandate, true);
     assert.equal(statsMandateOn.mandateCcActive, true);
     assert.equal(statsMandateOn.mandateCcBonus, 20);
-    assert.equal(statsMandateOn.baseAh, 40); // 20 基础 + 20 控制特化协同
+    assert.equal(statsMandateOn.baseAh, 35); // 15 基础 + 20 控制特化协同
     assert.equal(statsMandateOn.totalAp, 60);
 
-    // 未触发控制协同：仅提供基础 20 AH
-    const statsMandateOff = calculateEquipmentStats(['imperialMandate'], { mandateCcActive: false });
+    // 未触发控制协同（或死歌/船长大招无定身控制）：仅提供基础 15 AH，不享受定身缩短
+    const statsMandateOff = calculateEquipmentStats(['imperialMandate'], { heroKey: 'ashe', mandateCcActive: false });
     assert.equal(statsMandateOff.mandateCcActive, false);
     assert.equal(statsMandateOff.mandateCcBonus, 0);
-    assert.equal(statsMandateOff.baseAh, 20);
+    assert.equal(statsMandateOff.baseAh, 15);
+
+    const statsMandateKarthus = calculateEquipmentStats(['imperialMandate'], { heroKey: 'karthus' });
+    assert.equal(statsMandateKarthus.mandateCcActive, false);
+    assert.equal(statsMandateKarthus.mandateCcBonus, 0);
+    assert.equal(statsMandateKarthus.baseAh, 15);
   });
 
   test('海斗锻体额外属性：额外法强与攻击力同样受到帽子火炬与符文的被动放大增强', () => {
