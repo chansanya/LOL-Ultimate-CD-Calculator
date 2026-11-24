@@ -90,10 +90,15 @@
               <div class="aug-box-body">
                 <span class="aug-desc-text">攻速按 0.65 转化为急速 · 装备与海斗锻体攻速综合换算</span>
                 <div class="aug-summary-tag text-emerald" id="tag-purist-bonus">装备与锻体攻速提供: +0.0 AH</div>
-                <div class="aug-input-chip">
-                  <label for="num-extra-as">海斗锻体额外攻速</label>
-                  <input type="number" id="num-extra-as" min="0" max="500" step="5" value="0" placeholder="0">
-                  <span>%</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-extra-as">海斗锻体额外攻速</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-extra-as">0</span>
+                      <span class="val-unit">%</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-extra-as" class="aug-range-slider" min="0" max="300" step="5" value="0">
                 </div>
               </div>
             </div>
@@ -116,10 +121,15 @@
               <div class="aug-box-body">
                 <span class="aug-desc-text">法强按 30% 转化为急速 · 锻体法强受帽子火炬符文百分比增强</span>
                 <div class="aug-summary-tag text-cyan" id="tag-eureka-bonus">装备与锻体法强提供: +0.0 AH</div>
-                <div class="aug-input-chip">
-                  <label for="num-extra-ap">海斗锻体额外法强</label>
-                  <input type="number" id="num-extra-ap" min="0" max="2500" step="10" value="0" placeholder="0">
-                  <span>AP</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-extra-ap">海斗锻体额外法强</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-extra-ap">0</span>
+                      <span class="val-unit">AP</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-extra-ap" class="aug-range-slider" min="0" max="1500" step="10" value="0">
                 </div>
               </div>
             </div>
@@ -142,10 +152,15 @@
               <div class="aug-box-body">
                 <span class="aug-desc-text">击杀层数 · 每层体型缩小 4%</span>
                 <div class="aug-summary-tag" id="tag-shrink-bonus">当前层数提供: +0 AH</div>
-                <div class="aug-input-chip">
-                  <label for="num-shrink-stacks">击杀层数</label>
-                  <input type="number" id="num-shrink-stacks" min="0" max="50" step="1" value="0" placeholder="0">
-                  <span>层</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-shrink-stacks">击杀层数</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-shrink-stacks">0</span>
+                      <span class="val-unit">层</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-shrink-stacks" class="aug-range-slider" min="0" max="50" step="1" value="0">
                 </div>
               </div>
             </div>
@@ -166,12 +181,17 @@
                 </div>
               </div>
               <div class="aug-box-body">
-                <span class="aug-desc-text">击杀成长 · 每次击杀提供 3 急速</span>
+                <span class="aug-desc-text">参与击杀 · 每次提供 3 急速</span>
                 <div class="aug-summary-tag" id="tag-recursion-bonus">当前提供: +0 AH</div>
-                <div class="aug-input-chip">
-                  <label for="num-recursion-kills">击杀次数</label>
-                  <input type="number" id="num-recursion-kills" min="0" max="50" step="1" value="0" placeholder="0">
-                  <span>头</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-recursion-kills">参与击杀数</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-recursion-kills">0</span>
+                      <span class="val-unit">只</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-recursion-kills" class="aug-range-slider" min="0" max="50" step="1" value="0">
                 </div>
               </div>
             </div>
@@ -194,10 +214,15 @@
               <div class="aug-box-body">
                 <span class="aug-desc-text">攻击力 100% 转为法强 · 额外提升 15% 法强</span>
                 <div class="aug-summary-tag text-blue" id="tag-adapt-bonus">装备与锻体攻击力提供: +0 AP</div>
-                <div class="aug-input-chip">
-                  <label for="num-extra-ad">海斗锻体额外攻击力</label>
-                  <input type="number" id="num-extra-ad" min="0" max="1000" step="10" value="0" placeholder="0">
-                  <span>AD</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-extra-ad">海斗锻体额外攻击力</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-extra-ad">0</span>
+                      <span class="val-unit">AD</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-extra-ad" class="aug-range-slider" min="0" max="500" step="5" value="0">
                 </div>
               </div>
             </div>
@@ -220,10 +245,15 @@
               <div class="aug-box-body">
                 <span class="aug-desc-text">击杀叠加【背负】· 每层提升 5% 额外攻击力、法术强度与总攻速</span>
                 <div class="aug-summary-tag text-gold" id="tag-crown-bonus">未启用 · 每层击杀参与 +5% 额外3属性</div>
-                <div class="aug-input-chip">
-                  <label for="num-crown-stacks">【背负】击杀层数</label>
-                  <input type="number" id="num-crown-stacks" min="0" max="100" step="1" value="0" placeholder="0">
-                  <span>层</span>
+                <div class="aug-slider-chip">
+                  <div class="slider-header">
+                    <label for="num-crown-stacks">【背负】击杀层数</label>
+                    <div class="slider-val-badge">
+                      <span class="val-num font-mono" id="disp-num-crown-stacks">0</span>
+                      <span class="val-unit">层</span>
+                    </div>
+                  </div>
+                  <input type="range" id="num-crown-stacks" class="aug-range-slider" min="0" max="50" step="1" value="0">
                 </div>
               </div>
             </div>

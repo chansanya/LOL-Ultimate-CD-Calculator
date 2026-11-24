@@ -443,6 +443,105 @@ button { cursor: pointer; }
   color: var(--text-dim);
 }
 
+/* 海克斯进度条拖拽滑块控件 */
+.aug-slider-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(11, 20, 34, 0.85);
+  border: 1px solid rgba(0, 242, 255, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.aug-slider-chip:hover {
+  background: rgba(14, 26, 44, 0.92);
+  border-color: rgba(0, 242, 255, 0.38);
+}
+.slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.slider-header label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  user-select: none;
+  cursor: pointer;
+}
+.slider-val-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--cyan);
+}
+.slider-val-badge .val-num {
+  font-weight: 800;
+}
+.slider-val-badge .val-unit {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.aug-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(22, 38, 59, 0.9);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.aug-range-slider:hover {
+  background: rgba(30, 52, 80, 0.95);
+}
+.aug-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 242, 255, 0.7);
+  border: 1px solid #ffffff;
+  cursor: grab;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.aug-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px var(--cyan);
+}
+.aug-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.3);
+}
+.aug-range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 242, 255, 0.7);
+  cursor: grab;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.aug-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px var(--cyan);
+}
+.aug-range-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.3);
+}
+
 /* 机制横幅 */
 .mechanism-banner {
   background: rgba(14, 26, 44, 0.7);

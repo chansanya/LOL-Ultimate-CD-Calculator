@@ -271,7 +271,14 @@ function update() {
     const crownStacks = Math.max(0, Number($('num-crown-stacks')?.value) || 0);
     const torchStacks = Math.max(0, Math.min(5, Number($('num-torch-stacks')?.value) || 0));
 
-    // 读取海斗锻体额外属性（海斗属性铁砧）
+    // 读取海斗锻体与海克斯滑块属性并同步显示数值
+    const sliderIds = ['num-extra-as', 'num-extra-ap', 'num-extra-ad', 'num-shrink-stacks', 'num-recursion-kills', 'num-crown-stacks'];
+    sliderIds.forEach((id) => {
+      const el = $(id);
+      const disp = $(`disp-${id}`);
+      if (el && disp) disp.textContent = el.value;
+    });
+
     const anvilAs = Math.max(0, Number($('num-extra-as')?.value) || 0);
     const anvilAp = Math.max(0, Number($('num-extra-ap')?.value) || 0);
     const anvilAd = Math.max(0, Number($('num-extra-ad')?.value) || 0);
