@@ -216,7 +216,27 @@ button { cursor: pointer; }
 }
 @media (max-width: 1024px) {
   .deck-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .deck-column {
+    display: contents;
+  }
+  #section-hero-ranks {
+    order: 1;
+  }
+  #card-verdict {
+    order: 2;
+  }
+  #section-equipment {
+    order: 3;
+  }
+  #section-augments {
+    order: 4;
+  }
+  #card-damage {
+    order: 5;
   }
 }
 
@@ -1761,4 +1781,374 @@ button { cursor: pointer; }
   font-size: 10px;
   color: #334455;
   letter-spacing: 0.05em;
+}
+
+/* ============================================================
+   移动端与触控交互专属全息优化 (Mobile & Touch Device Enhancements)
+   ============================================================ */
+
+/* 移动端全息实时吸底看板 (Mobile Floating HUD Dock) */
+.mobile-hud-dock {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .deck-wrapper {
+    width: 100%;
+    padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px));
+    gap: 14px;
+  }
+
+  .mobile-hud-dock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 54px;
+    padding: 0 16px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(8, 16, 28, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(0, 242, 255, 0.4);
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 242, 255, 0.15);
+    z-index: 990;
+  }
+  .hud-dock-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .hud-haste-pill {
+    font-size: 13px;
+    font-weight: 800;
+    font-family: monospace;
+    color: #060b13;
+    background: var(--cyan);
+    padding: 3px 8px;
+    border-radius: 4px;
+    box-shadow: 0 0 8px var(--cyan-glow);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .hud-skills-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btn-hud-drawer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 242, 255, 0.15);
+    border: 1px solid rgba(0, 242, 255, 0.45);
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .btn-hud-drawer:active {
+    background: var(--cyan);
+    color: #060b13;
+  }
+}
+
+@media (max-width: 640px) {
+  /* 顶部导航与品牌栏 */
+  .deck-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .brand {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .brand-hex-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+  .brand-hex-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .brand-title {
+    font-size: 17px;
+  }
+  .brand-sub {
+    display: none;
+  }
+  .hero-nav-tabs {
+    width: 100%;
+    padding: 3px;
+    gap: 4px;
+  }
+  .hero-tab {
+    flex: 1;
+    padding: 7px 4px;
+    justify-content: center;
+    gap: 6px;
+  }
+  .hero-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .hero-tab-name {
+    font-size: 12px;
+  }
+  .btn-deck-reset {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* 核心卡片通用间距 */
+  .deck-card {
+    padding: 14px 14px;
+    gap: 12px;
+    border-radius: var(--radius-md);
+  }
+  .caption-title {
+    font-size: 14px;
+  }
+  .caption-actions {
+    gap: 6px;
+  }
+  .btn-batch-fold, .btn-section-fold {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  .bonus-glow-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+
+  /* 战术推演仪表盘移动端响应 */
+  .verdict-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .verdict-status-pill {
+    justify-content: center;
+    text-align: center;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+  .btn-deck-detail {
+    justify-content: center;
+    width: 100%;
+    padding: 9px 16px;
+  }
+  .telemetry-metrics-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  #metric-block-1 {
+    grid-column: span 2;
+    padding: 10px 14px;
+  }
+  #metric-block-2, #metric-block-3 {
+    padding: 10px 12px;
+  }
+  .block-label {
+    font-size: 11px;
+  }
+  .block-number {
+    font-size: 24px;
+  }
+  .block-number .dual-haste {
+    font-size: 22px;
+  }
+  .block-sub {
+    font-size: 11px;
+  }
+
+  /* 英雄加点与技能滑块 */
+  .hero-rank-chips {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hero-rank-chip {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  .hero-skills-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .rank-pill {
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  /* 作战装备栏：6 格横向单排微缩整齐展示 */
+  .inventory-slots-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+  }
+  .inv-slot {
+    height: 52px;
+    padding: 2px;
+    border-radius: 6px;
+  }
+  .inv-slot-img {
+    width: 26px;
+    height: 26px;
+  }
+  .inv-slot-name {
+    font-size: 9px;
+    max-width: 44px;
+  }
+  .inv-slot.empty {
+    font-size: 11px;
+  }
+
+  /* 装备汇总指标条 */
+  .items-summary-bar {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .sum-val {
+    font-size: 14px;
+  }
+  .sum-label {
+    font-size: 11px;
+  }
+
+  /* 装备挑选库：双列卡片布局 */
+  .items-picker-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-height: 380px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .item-card {
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .item-card-title {
+    font-size: 12px;
+  }
+  .item-card-img {
+    width: 26px;
+    height: 26px;
+  }
+  .item-card-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+  .item-card-stats {
+    gap: 3px;
+  }
+  .stat-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+  .item-card-note {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  /* 装备分类 tabs */
+  .item-cat-tabs {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .item-cat-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .item-tab {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* 海克斯单卡响应 */
+  .aug-box {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .aug-box-name {
+    font-size: 13px;
+  }
+  .aug-icon-img {
+    width: 24px;
+    height: 24px;
+  }
+  .aug-pill-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  /* 锻体属性滑动条触控优化 */
+  .adjuster-sliders-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .adjuster-slider-row input[type="range"] {
+    height: 32px;
+  }
+
+  /* 终极大招伤害卡片 */
+  .damage-metric-val {
+    font-size: 26px;
+  }
+  .damage-breakdown-chips {
+    gap: 5px;
+  }
+  .dmg-chip {
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+
+  /* 全息抽屉面板：全宽平滑覆盖 */
+  .drawer-panel {
+    width: 100%;
+    max-width: 100vw;
+  }
+  .drawer-header {
+    padding: 14px 16px;
+  }
+  .drawer-body {
+    padding: 16px;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 触控交互触感增强（移动设备触摸反馈） */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  .item-card:active,
+  .inv-slot.filled:active,
+  .hero-tab:active,
+  .rank-pill:active,
+  .hero-rank-chip:active,
+  .item-tab:active {
+    transform: scale(0.97);
+    transition: transform 0.08s ease;
+  }
+
+  /* 移动端常显移除角标，方便触摸单手直接卸载 */
+  .inv-slot-remove-badge {
+    opacity: 0.85;
+  }
 }

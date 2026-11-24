@@ -475,6 +475,9 @@ function update() {
         card.className = 'deck-card verdict-telemetry-card state-success';
         badge.className = 'verdict-status-pill pure-haste';
         statusText.textContent = `常规冷却模式 · 技能冷却压缩 ${(calcResult.cdrA * 100).toFixed(1)}%`;
+
+        if ($('hud-dock-haste')) $('hud-dock-haste').textContent = `${Math.round(totalHaste)} AH`;
+        if ($('hud-dock-skills')) $('hud-dock-skills').textContent = `E ${calcResult.cdA.toFixed(1)}s · R ${calcResult.cdB.toFixed(1)}s`;
       } else {
         // 勾选大法师：互刷对向返还推演模式
         // 指标 1：理论最低急速
@@ -518,6 +521,11 @@ function update() {
           statusText.textContent = `未达成互刷 · 还差 ${gap} 急速`;
           $('sub-stat-1').className = 'block-sub text-amber';
           $('sub-stat-1').textContent = `常规 ${Math.round(totalHaste)} AH · 差 ${gap} AH 达成归零`;
+        }
+
+        if ($('hud-dock-haste')) $('hud-dock-haste').textContent = `${Math.round(totalHaste)} AH`;
+        if ($('hud-dock-skills')) {
+          $('hud-dock-skills').textContent = isLoop ? '已达标理论无限互刷！' : (isAchievable ? `最低需 ${calcResult.minHaste} AH 达标` : '无法达成');
         }
       }
     } else {
@@ -566,6 +574,9 @@ function update() {
       $('val-stat-3').innerHTML = `${(cdrUlt * 100).toFixed(1)}<span class="number-unit">%</span>`;
       $('sub-stat-3').className = 'block-sub text-muted';
       $('sub-stat-3').textContent = puristCaster ? '含术师 +10% 突破上限 CDR' : '大招专属急速加算折算';
+
+      if ($('hud-dock-haste')) $('hud-dock-haste').textContent = `${Math.round(ultHaste)} AH`;
+      if ($('hud-dock-skills')) $('hud-dock-skills').textContent = `R ${cdUlt.toFixed(1)}s · 压缩 ${(cdrUlt * 100).toFixed(1)}%`;
     }
 
     // 4. 终极大招全息伤害推演
@@ -676,6 +687,10 @@ function initEvents() {
     }, 280);
   }
   $('btn-open-drawer')?.addEventListener('click', openDrawer);
+  $('btn-hud-open-drawer')?.addEventListener('click', openDrawer);
+  $('btn-hud-scroll')?.addEventListener('click', () => {
+    $('card-verdict')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('btn-close-drawer')?.addEventListener('click', closeDrawer);
   $('btn-collapse-drawer-bottom')?.addEventListener('click', closeDrawer);
   $('drawer-backdrop')?.addEventListener('click', closeDrawer);
