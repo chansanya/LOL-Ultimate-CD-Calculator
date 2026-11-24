@@ -1,9 +1,8 @@
 # 海克斯大招流计算器 (LOL Ultimate CD Calculator)
 
-英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript，原生支持 **Cloudflare Pages 全球无限制静态托管**与 **Cloudflare Workers 单文件边缘交付**双轨部署，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
+英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript，统一基于 **Cloudflare Pages 全球无限制静态托管**，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
 
 [![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-f38020?logo=cloudflarepages&logoColor=white)](https://dash.cloudflare.com/)
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chansanya/LOL-Ultimate-CD-Calculator)
 [![CI Tests](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions)
 
 > **理论达标不代表游戏内可以无限释放。** 模型计算基于海克斯机制与理论推演公式，游戏版本未独立核验；技能施放手感、施法间隔与充能机制请以对局实际体验为准。表面伤害模拟计算可能有误差，以实际对局为准。
@@ -120,41 +119,36 @@ export PATH=/home/dev/workspace/node24.11.1/bin:$PATH
 ## 构建与测试验证
 
 ```bash
-npm test          # 构建 + 纯函数计算、加点表格、装备联动与 Worker 交付测试
-npm run build     # 编译 CSS / JS，校验 CSP 散列，生成单文件 worker.js
-npm run check     # 全套测试 + Wrangler deploy --dry-run 部署预检
+npm test          # 构建 + 纯函数计算、加点表格、装备联动与 Pages 交付测试
+npm run build     # 编译 CSS / JS，校验 CSP 散列，生成 dist/ 静态目录
+npm run check     # 全套测试 + 部署预检
 ```
 
-* **测试框架**：基于 Node.js 原生 `node:test`，无外部断言库依赖，共计 109 项验收测试 100% 通过。
-* **单文件安全交付**：构建生成的 `worker.js` 包含经过严格散列校验的 Content-Security-Policy (CSP)，禁止一切未授权外部脚本注入与跨域请求。
+* **测试框架**：基于 Node.js 原生 `node:test`，无外部断言库依赖，共计 112 项验收测试 100% 通过。
+* **安全交付**：构建生成的 `dist/` 包含经过严格散列校验的 Content-Security-Policy (CSP) `_headers`，禁止一切未授权外部脚本注入与跨域请求。
 
 ---
 
-## Cloudflare Pages 全球免费部署（强烈推荐）
+## Cloudflare Pages 全球部署
 
-Cloudflare Pages 提供**完全不限请求次数、不限带宽流量**的全球边缘静态托管，完美匹配玩家工具站：
+本项目已全面统一采用 **Cloudflare Pages** 进行静态部署。Cloudflare Pages 提供**完全不限请求次数、不限带宽流量**的全球边缘分发：
 
-1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，进入 **Compute (Workers) -> Workers & Pages**。
-2. 点击 **Create -> Pages -> Connect to Git**。
-3. 授权连接 GitHub 仓库 `chansanya/LOL-Ultimate-CD-Calculator`。
-4. 构建参数配置：
-   * **Framework preset**：`None`
-   * **Build command**：`npm run build`
-   * **Build output directory**：`dist`
-5. 点击 **Save and Deploy**，数十秒内即刻在全球 CDN 节点上线，并分配 `*.pages.dev` 访问域名。
-6. 之后每次向 GitHub 主分支推送代码，Pages 均会自动执行多区域增量构建，并支持一键绑定个性化自定义域名与免费 SSL 证书。
+### 部署步骤
 
----
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，在左侧导航栏点击 **Compute (Workers) -> Workers & Pages**。
+2. 点击 **Create application** -> 切换到 **Pages** 选项卡 -> 点击 **Connect to Git**。
+3. 授权连接你的 GitHub 仓库：`chansanya/LOL-Ultimate-CD-Calculator`。
+4. 构建参数填写：
+   * **Project name (项目名称)**：自定义（如 `lol-ultimate-cd-calculator`）
+   * **Production branch (生产分支)**：`main`
+   * **Framework preset (框架预设)**：选择 **None**
+   * **Build command (构建命令)**：`npm run build`
+   * **Build output directory (输出目录)**：`dist`
+   * **Root directory (根目录)**：留空（默认为 `/`）
+5. 环境变量与机密 (Environment variables / Secrets) & 绑定 (Bindings)：**无需配置，全部留空**。
+6. 点击底部的 **Save and Deploy** 按钮。
 
-## Cloudflare Workers 单文件部署（双轨兼容）
-
-本项目同时保留了单文件 `worker.js`，支持直接发布至 Cloudflare Workers：
-
-1. Fork 或推送本项目至 GitHub 公开仓库 `chansanya/LOL-Ultimate-CD-Calculator`。
-2. 点击顶部的 **Deploy to Cloudflare Workers** 按钮。
-3. 授权连接 GitHub 仓库，选择目标 Worker 名称。
-4. 确认构建命令为 `npm run build`，部署命令为 `npm run deploy`。
-5. 完成部署后获得专属访问域名（`*.workers.dev`）。
+数十秒内即可完成全球多区域 CDN 节点分发，并获得专属的 `*.pages.dev` 访问链接。以后每次向 `main` 分支执行 `git push`，Cloudflare Pages 将自动触发增量构建并极速上线！
 
 ---
 

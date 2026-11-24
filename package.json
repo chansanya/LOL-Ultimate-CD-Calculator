@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "原生 JavaScript LOL 大招流理论计算器，单文件 Cloudflare Worker",
+  "description": "英雄联盟海克斯大招流理论计算器，Cloudflare Pages 全球无限制静态分发",
   "engines": {
     "node": ">=20.0.0"
   },

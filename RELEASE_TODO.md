@@ -1,6 +1,6 @@
 # 本版本待发布事项
 
-根据当前仓库变动，本版本发布推荐优先使用 **Cloudflare Pages** 托管（不限流量与请求数），同时继续兼容 Cloudflare Workers：
+根据当前仓库变动，本版本统一使用 **Cloudflare Pages** 进行全球边缘部署（完全不限请求量与流量）：
 
 ## 1. 运行本地验证与部署预检
 
@@ -8,30 +8,21 @@
 npm run check
 ```
 
-原因：执行全套数学引擎、海克斯装备联动、Pages 静态产物 (`dist/index.html` 与 `dist/_headers`) 及 Workers CSP 散列测试，并通过 dry-run 验证合规性。
+原因：执行全套数学引擎、海克斯装备联动及 Pages 静态产物 (`dist/index.html` 与 `dist/_headers`) 测试，确保 100% 通过。
 
-## 2. 部署到 Cloudflare Pages（首选强烈推荐）
+## 2. 部署到 Cloudflare Pages
 
-1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，点击侧边栏 **Compute (Workers) -> Workers & Pages**。
-2. 点击 **Create -> Pages -> Connect to Git**。
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，在左侧导航栏点击 **Compute (Workers) -> Workers & Pages**。
+2. 点击 **Create application** -> 选择 **Pages** 选项卡 -> 点击 **Connect to Git**。
 3. 选择 GitHub 仓库 `chansanya/LOL-Ultimate-CD-Calculator`。
-4. 构建参数配置：
-   * **Framework preset**：`None`
-   * **Build command**：`npm run build`
-   * **Build output directory**：`dist`
-5. 点击 **Save and Deploy**，Cloudflare 即刻在全球 CDN 节点免费上线，获得无请求上限的专属域名。
+4. 构建参数填写：
+   * **Project name (项目名称)**：自定义（如 `lol-ultimate-cd-calculator`）
+   * **Production branch (生产分支)**：`main`
+   * **Framework preset (框架预设)**：选择 **None**
+   * **Build command (构建命令)**：`npm run build`
+   * **Build output directory (输出目录)**：`dist`
+   * **Root directory (根目录)**：留空（默认为 `/`）
+5. 环境变量与绑定：**无需配置，全部留空**。
+6. 点击底部的 **Save and Deploy**，即可完成全球上线并获得 `*.pages.dev` 访问链接。
 
-原因：Pages 静态托管**完全不限请求量与流量**，无需担心玩家高并发访问产生限额报错；每次向 GitHub 推送代码自动触发增量构建。
-
-## 3. 部署到 Cloudflare Workers（双轨兼容备选）
-
-若仍希望使用 Workers 部署，可任选以下途径：
-
-### 途径 A：通过 GitHub 一键部署按钮
-点击 README 顶部的 **Deploy to Cloudflare Workers** 按钮，根据页面提示完成连接部署。
-
-### 途径 B：通过 Wrangler CLI 本地发布
-```bash
-npx wrangler login   # 若未登录
-npm run deploy       # 自动校验测试并通过 wrangler 部署
-```
+原因：Pages 静态托管**完全不限请求量与带宽**，免除 Workers 每日 10 万次上限焦虑；每次向 GitHub 推送代码自动触发增量部署。
