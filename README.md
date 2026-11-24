@@ -1,8 +1,8 @@
 # 海克斯大招流计算器 (LOL Ultimate CD Calculator)
 
-英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript 与 Cloudflare 边缘架构，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
+英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript，基于 **Cloudflare Pages 全球无限制静态托管**，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chansanya/LOL-Ultimate-CD-Calculator)
+[![Cloudflare Pages](https://img.shields.io/badge/Hosted%20on-Cloudflare%20Pages-f38020?logo=cloudflarepages&logoColor=white)](https://dash.cloudflare.com/)
 [![CI Tests](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions)
 
 > **理论达标不代表游戏内可以无限释放。** 模型计算基于海克斯机制与理论推演公式，游戏版本未独立核验；技能施放手感、施法间隔与充能机制请以对局实际体验为准。表面伤害模拟计算可能有误差，以实际对局为准。
@@ -129,20 +129,30 @@ npm run check     # 全套测试 + 部署预检
 
 ---
 
-## 一键快速部署 (Deploy to Cloudflare)
+## Cloudflare Pages 部署指引
 
-点击上方 **Deploy to Cloudflare** 按钮，即可享受官方自动化一键部署：
+Cloudflare Pages 是专门面向前端静态站点的全球托管平台，**完全不限访问次数与带宽**。
 
-1. 登录 Cloudflare 账号，连接你的 GitHub 账号；
-2. 页面会自动识别仓库并进入部署配置页：
-   * **项目名称**：默认或自定义（如 `lol-ultimate-cd-calculator`）
+> **特别说明**：形如 `deploy.workers.cloudflare.com` 的外链 Deploy 按钮是 Cloudflare 专用于 Worker 产品的（所以点开才会显示“配置 Worker 项目”）。Pages 项目官方目前不提供类似的外链一键克隆服务，需在控制台直接关联仓库，只需操作一次，以后自动同步更新。
+
+### 部署操作步骤
+
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)；
+2. 在左侧菜单点击 **Workers 和 Pages (Workers & Pages)**；
+3. 点击右侧的 **创建 (Create application)** 按钮；
+4. **务必切换到「Pages」选项卡**（不要停留在默认的 Workers 选项卡）-> 点击 **连接到 Git (Connect to Git)**；
+5. 在列表里直接勾选你的 GitHub 仓库：`chansanya/LOL-Ultimate-CD-Calculator`，点击「开始设置」；
+6. 在配置表单中填写：
+   * **项目名称**：自定义（如 `lol-ultimate-cd-calculator`）
    * **生产分支**：`main`
-   * **构建设置**：自动识别 `npm run build`
-   * **环境变量与绑定**：全部留空（纯本地计算，无外部数据库与密钥依赖）
-3. 点击 **保存并部署 (Save and Deploy)**，数十秒内即刻部署上线，并分配专属访问链接！
-4. 之后向仓库 `main` 分支推送代码，Cloudflare 会自动执行重新构建与上线。
+   * **框架预设**：选择 **None**
+   * **构建命令**：`npm run build`
+   * **构建输出目录**：`dist`
+   * **根目录**：留空（即默认的 `/`）
+7. 环境变量与绑定：**无需配置，直接留空**；
+8. 点击底部的 **保存并部署 (Save and Deploy)** 按钮。
 
-> 产物兼容说明：本项目构建脚本同时输出单文件 `worker.js` 与静态资产目录 `dist/`（含完整 `_headers` 安全头配置），亦支持在 Cloudflare Pages 中直接连接仓库并选择 `dist` 目录进行发布。
+数十秒后即可完成全球多区域 CDN 节点分发，并获得专属的 `*.pages.dev` 访问链接。以后每次向 `main` 分支执行 `git push`，Cloudflare Pages 将自动触发增量构建并极速上线！
 
 ---
 
