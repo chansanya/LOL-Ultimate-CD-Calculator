@@ -1,8 +1,9 @@
 # 海克斯大招流计算器 (LOL Ultimate CD Calculator)
 
-英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript 与 Cloudflare Workers 单文件边缘架构，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
+英雄联盟海克斯大乱斗 / 斗魂竞技场大招流战术模拟与计算终端。原生 HTML5、CSS3、Vanilla JavaScript，原生支持 **Cloudflare Pages 全球无限制静态托管**与 **Cloudflare Workers 单文件边缘交付**双轨部署，深色全息冰蓝机能美学。纯浏览器本地秒级实时运算，零数据库、零外部 API、零运行时 CDN 依赖。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chansanya/LOL-Ultimate-CD-Calculator)
+[![Deploy to Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-f38020?logo=cloudflarepages&logoColor=white)](https://dash.cloudflare.com/)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chansanya/LOL-Ultimate-CD-Calculator)
 [![CI Tests](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/chansanya/LOL-Ultimate-CD-Calculator/actions)
 
 > **理论达标不代表游戏内可以无限释放。** 模型计算基于海克斯机制与理论推演公式，游戏版本未独立核验；技能施放手感、施法间隔与充能机制请以对局实际体验为准。表面伤害模拟计算可能有误差，以实际对局为准。
@@ -129,13 +130,31 @@ npm run check     # 全套测试 + Wrangler deploy --dry-run 部署预检
 
 ---
 
-## Cloudflare Workers 一键部署
+## Cloudflare Pages 全球免费部署（强烈推荐）
+
+Cloudflare Pages 提供**完全不限请求次数、不限带宽流量**的全球边缘静态托管，完美匹配玩家工具站：
+
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，进入 **Compute (Workers) -> Workers & Pages**。
+2. 点击 **Create -> Pages -> Connect to Git**。
+3. 授权连接 GitHub 仓库 `chansanya/LOL-Ultimate-CD-Calculator`。
+4. 构建参数配置：
+   * **Framework preset**：`None`
+   * **Build command**：`npm run build`
+   * **Build output directory**：`dist`
+5. 点击 **Save and Deploy**，数十秒内即刻在全球 CDN 节点上线，并分配 `*.pages.dev` 访问域名。
+6. 之后每次向 GitHub 主分支推送代码，Pages 均会自动执行多区域增量构建，并支持一键绑定个性化自定义域名与免费 SSL 证书。
+
+---
+
+## Cloudflare Workers 单文件部署（双轨兼容）
+
+本项目同时保留了单文件 `worker.js`，支持直接发布至 Cloudflare Workers：
 
 1. Fork 或推送本项目至 GitHub 公开仓库 `chansanya/LOL-Ultimate-CD-Calculator`。
-2. 点击顶部的 **Deploy to Cloudflare** 按钮。
+2. 点击顶部的 **Deploy to Cloudflare Workers** 按钮。
 3. 授权连接 GitHub 仓库，选择目标 Worker 名称。
 4. 确认构建命令为 `npm run build`，部署命令为 `npm run deploy`。
-5. 完成部署后即刻获得高可用、全边缘分发的专属访问域名（*.workers.dev）。
+5. 完成部署后获得专属访问域名（`*.workers.dev`）。
 
 ---
 
@@ -143,6 +162,7 @@ npm run check     # 全套测试 + Wrangler deploy --dry-run 部署预检
 
 ```text
 ├── .github/workflows/ci.yml # GitHub Actions 自动化测试与打包检查
+├── dist/                    # Cloudflare Pages 静态产物目录（含 index.html 与 _headers 安全头）
 ├── public/                  # 静态资源与离线图标库
 │   ├── augments/            # 海克斯强化官方图标
 │   ├── champions/           # 英雄原画头像
@@ -159,9 +179,9 @@ npm run check     # 全套测试 + Wrangler deploy --dry-run 部署预检
 │   └── worker.js            # Cloudflare Worker 请求处理工厂
 ├── tests/
 │   ├── engine.test.js       # 规范验收、边界防护与联动推演测试
-│   └── worker.test.js       # Worker 响应头、CSP 散列与安全测试
-├── scripts/build.mjs        # esbuild 打包内联与单文件生成器
-├── worker.js                # 构建产物（可直接独立部署）
+│   └── worker.test.js       # Pages 静态交付、Worker 响应头与 CSP 安全测试
+├── scripts/build.mjs        # 打包器：同时生成 dist/ (Pages) 与 worker.js (Workers)
+├── worker.js                # Workers 单文件交付产物（可直接独立部署）
 ├── wrangler.toml            # Cloudflare Workers 项目配置
 └── README.md                # 项目文档
 ```

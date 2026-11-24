@@ -74,4 +74,20 @@ describe('单文件 Worker 交付', () => {
   });
 });
 
+describe('Cloudflare Pages 静态交付 (dist/)', () => {
+  test('dist/index.html 存在且包含内嵌代码', async () => {
+    const html = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
+    assert.match(html, /<html lang="zh-CN">/);
+    assert.doesNotMatch(html, /APP_STYLES|APP_SCRIPT/);
+    assert.ok(html.length > 50000);
+  });
+
+  test('dist/_headers 存在且包含严格 CSP 与安全头', async () => {
+    const headers = await readFile(new URL('../dist/_headers', import.meta.url), 'utf8');
+    assert.match(headers, /Content-Security-Policy:/);
+    assert.match(headers, /X-Content-Type-Options: nosniff/);
+    assert.match(headers, /X-Frame-Options: DENY/);
+  });
+});
+
 function responseSize(source) { return Buffer.byteLength(source); }
