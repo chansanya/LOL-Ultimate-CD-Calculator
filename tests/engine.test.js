@@ -5,6 +5,9 @@ import {
   hasteToCdr,
   cdrToHaste,
   getAsheRecommendations,
+  calculateMayhemHaste,
+  calculateEquipmentStats,
+  calculateUltimateDamage,
 } from '../src/engine.js';
 import { HEROES } from '../src/data/heroes.js';
 import { AUGMENTS } from '../src/data/augments.js';
@@ -393,3 +396,174 @@ describe('寒冰预设、海克斯数据与 UI 推荐接口', () => {
       getAsheRecommendations());
   });
 });
+
+describe('海克斯大乱斗强化与装备联动计算', () => {
+  test('纯粹主义者 - 术师：攻速按 0.65 换算为急速，并获得 10% 加算 CDR', () => {
+    // 纳什之牙提供 50% 攻速
+    const res = calculateMayhemHaste({ puristCaster: true, attackSpeed: 50 });
+    assert.equal(res.bonusHaste, 32.5);
+    assert.equal(res.bonusCdr, 0.1);
+    assert.equal(res.totalHaste, 32.5);
+  });
+
+  test('尤里卡：法术强度 AP × 30% 转化为急速', () => {
+    const res = calculateMayhemHaste({ eureka: true, ap: 200 });
+    assert.equal(res.bonusHaste, 60);
+    assert.equal(res.totalHaste, 60);
+  });
+
+  test('缩小引擎：每层击杀获得 10 急速', () => {
+    const res = calculateMayhemHaste({ shrinkEngine: true, shrinkStacks: 6 });
+    assert.equal(res.bonusHaste, 60);
+  });
+
+  test('无限循环往复：基准 +60 急速，每次击杀 +3 急速', () => {
+    const res = calculateMayhemHaste({ infiniteRecursion: true, kills: 10 });
+    assert.equal(res.bonusHaste, 90);
+  });
+
+  test('全海克斯叠加联动与装备基础急速池正确累加', () => {
+    // 基础 60 AH (装备残疫20+星界驱驰25+纳什15) + 纳什50%攻速转 32.5 AH + 300AP转 90 AH + 5层缩小50 AH + 往复(60+30) AH
+    const res = calculateMayhemHaste({
+      baseHaste: 60,
+      puristCaster: true,
+      attackSpeed: 50,
+      eureka: true,
+      ap: 300,
+      shrinkEngine: true,
+      shrinkStacks: 5,
+      infiniteRecursion: true,
+      kills: 10,
+    });
+    // bonusHaste = 32.5 + 90 + 50 + 90 = 262.5
+    // totalHaste = 60 + 262.5 = 322.5
+    assert.equal(res.bonusHaste, 262.5);
+    assert.equal(res.totalHaste, 322.5);
+    assert.equal(res.bonusCdr, 0.1);
+  });
+
+  test('装备库属性汇总：残疫、纳什、帽子与咒刃激活联动', () => {
+    // 装备纳什(15 AH, 80 AP, 50% AS) + 残疫(15 AH, 85 AP, 20 Ult AH) + 巫妖(10 AH, 115 AP)
+    const stats1 = calculateEquipmentStats(['nashor', 'malignance', 'lichBane'], { lichBaneActive: false });
+    assert.equal(stats1.baseAh, 40); // 15 + 15 + 10
+    assert.equal(stats1.totalAp, 280); // 80 + 85 + 115
+    assert.equal(stats1.totalAs, 50); // 50% from nashor
+    assert.equal(stats1.ultAh, 20); // 20 from malignance
+
+    // 激活巫妖咒刃爆发：+50% 攻速
+    const stats2 = calculateEquipmentStats(['nashor', 'malignance', 'lichBane'], { lichBaneActive: true });
+    assert.equal(stats2.totalAs, 100); // 50 + 50
+
+    // 装备帽子：AP 增幅 30% (S14.23 官方数值)
+    const stats3 = calculateEquipmentStats(['nashor', 'rabadon'], { lichBaneActive: false });
+    // AP = (80 + 130) * 1.30 = 210 * 1.30 = 273
+    assert.equal(stats3.totalAp, 273);
+    assert.equal(stats3.hasRabadon, true);
+  });
+
+  test('黯炎火炬与物理转魔法：被动法强放大与物转法联动', () => {
+    // 黯炎火炬(80 AP, 20 AH) + 3 层命中 (+12% AP)
+    const statsTorch = calculateEquipmentStats(['blackfireTorch'], { torchStacks: 3 });
+    assert.equal(statsTorch.baseAh, 20);
+    // 80 * 1.12 = 89.6 -> 90
+    assert.equal(statsTorch.totalAp, 90);
+
+    // 装备大天使之杖(25 AH, 80 AP) + 兰德里的折磨(70 AP, 0 AH)
+    const statsMage = calculateEquipmentStats(['archangelStaff', 'liandry']);
+    assert.equal(statsMage.baseAh, 25);
+    assert.equal(statsMage.totalAp, 150);
+
+    // 装备公理圆弧(55 AD) + 朔极之矛(45 AD) = 100 AD
+    // 开启物理转魔法：100 AD 100% 转化为 100 AP，且额外提升 15% AP
+    const statsAdapt = calculateEquipmentStats(['axiomArc', 'shojin'], { adaptActive: true });
+    assert.equal(statsAdapt.totalAd, 0); // AD 被转化为 AP
+    // AP = 100 * 1.15 = 115
+    assert.equal(statsAdapt.totalAp, 115);
+  });
+
+  test('海斗锻体额外属性：额外法强与攻击力同样受到帽子火炬与符文的被动放大增强', () => {
+    // 装备纳什 (80 AP) + 锻体额外法强 120 AP = 200 基础法强
+    // 装备帽子 (+30% AP)：(80 + 120) * 1.30 = 260 AP
+    const stats1 = calculateEquipmentStats(['nashor', 'rabadon'], { anvilAp: 120 });
+    assert.equal(stats1.rawAp, 210); // 80 (nashor) + 130 (rabadon)
+    assert.equal(stats1.anvilAp, 120);
+    assert.equal(stats1.totalRawAp, 330);
+    // 330 * 1.30 = 429
+    assert.equal(stats1.totalAp, 429);
+
+    // 锻体额外攻速 50% + 纳什 50% = 100% AS
+    const statsAs = calculateEquipmentStats(['nashor'], { anvilAs: 50 });
+    assert.equal(statsAs.totalAs, 100);
+
+    // 锻体额外攻击力 50 AD + 锻体额外法强 50 AP + 物转法 (+15%)
+    const statsAnvilAdapt = calculateEquipmentStats([], { anvilAd: 50, anvilAp: 50, adaptActive: true });
+    // 50 AD 转为 50 AP，加上 50 锻体 AP = 100 基础 AP
+    // 放大 15%：100 * 1.15 = 115 AP
+    assert.equal(statsAnvilAdapt.totalAp, 115);
+  });
+
+  test('海克斯强化【王冠之重】：加3属性（AD/AP/AS）并按层数叠加，与海克斯质变联动', () => {
+    // 装备纳什 (80 AP, 50% AS) + 朔极之矛 (45 AD)
+    // 启用王冠之重：10 层背负（每层 +5% ➔ 提升 50%）
+    const statsCrown = calculateEquipmentStats(['nashor', 'shojin'], {
+      heavyCrownActive: true,
+      heavyCrownStacks: 10,
+    });
+    // 基础: 45 AD, 80 AP, 50% AS
+    // 提升 50%:
+    // AD = 45 * 1.5 = 67.5 -> Math.round = 68
+    // AP = 80 * 1.5 = 120
+    // AS = 50 * 1.5 = 75
+    assert.equal(statsCrown.totalAd, 68);
+    assert.equal(statsCrown.totalAp, 120);
+    assert.equal(statsCrown.totalAs, 75);
+
+    // 质变联动 1：王冠之重 + 纯粹术师 (AS -> AH)
+    // 75% AS 经纯粹术师 0.65 换算：75 * 0.65 = 48.75 AH (未启用王冠时仅 50 * 0.65 = 32.5 AH)
+    const hasteWithPurist = calculateMayhemHaste({
+      puristCaster: true,
+      attackSpeed: statsCrown.totalAs,
+    });
+    assert.equal(hasteWithPurist.bonusHaste, 48.75);
+
+    // 质变联动 2：王冠之重 + 物理转魔法 + 尤里卡 (AD -> AP -> AH)
+    // 装备 100 AD, 100 AP
+    // 王冠 20 层 (+100% 提升)：
+    // AD 变为 200, 基础 AP 变为 200
+    // 物理转魔法：200 AD 转化为 200 AP，再获 15% 放大
+    // 最终 AP = (200 + 200) * 1.15 = 460 AP
+    const statsSynergy = calculateEquipmentStats([], {
+      anvilAd: 100,
+      anvilAp: 100,
+      heavyCrownActive: true,
+      heavyCrownStacks: 20,
+      adaptActive: true,
+    });
+    assert.equal(statsSynergy.totalAd, 0);
+    assert.equal(statsSynergy.totalAp, 460);
+
+    // 尤里卡 (AP × 30%): 460 * 0.3 = 138 AH!
+    const hasteEureka = calculateMayhemHaste({
+      eureka: true,
+      ap: statsSynergy.totalAp,
+    });
+    assert.equal(hasteEureka.bonusHaste, 138);
+  });
+
+  test('终极大招伤害计算：艾希、死歌与船长大招加成与基础伤害', () => {
+    // 艾希 2 级大招 (400 基础 + 100% AP)，AP = 300
+    const asheDmg = calculateUltimateDamage({ heroKey: 'ashe', rank: 2, ap: 300 });
+    assert.equal(asheDmg.totalDamage, 700);
+
+    // 死歌 3 级大招 (500 基础 + 75% AP)，AP = 400
+    const karthusDmg = calculateUltimateDamage({ heroKey: 'karthus', rank: 3, ap: 400 });
+    assert.equal(karthusDmg.totalDamage, 800);
+    assert.equal(karthusDmg.totalTeamDamage, 4000);
+
+    // 船长 3 级大招 (单波 100 基础 + 10% AP，12 波全中 1200 基础 + 120% AP)，AP = 200
+    const gpDmg = calculateUltimateDamage({ heroKey: 'gangplank', rank: 3, ap: 200 });
+    assert.equal(gpDmg.totalDamage, 120);
+    assert.equal(gpDmg.total12WaveDamage, 1440);
+  });
+});
+

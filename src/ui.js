@@ -1,280 +1,733 @@
-import { createElement, Snowflake, ArrowUpRight, CodeXml, FlaskConical, BowArrow, SlidersHorizontal, RotateCcw, PencilRuler, ShieldCheck, Activity, CircleAlert, CircleCheck, Crosshair, ChartNoAxesCombined, Info, GitCompareArrows, TriangleAlert, Gauge, Repeat2, BookOpen, ChevronDown, Sparkles, WandSparkles, Target, Flag } from 'lucide';
-import { calculateCooldown, getAsheRecommendations } from './engine.js';
+import { createElement, Snowflake, RotateCcw, Zap, Shield, Sparkles, SlidersHorizontal } from 'lucide';
+import { calculateCooldown, calculateMayhemHaste, calculateEquipmentStats, calculateUltimateDamage } from './engine.js';
 import { HEROES } from './data/heroes.js';
-import { AUGMENTS } from './data/augments.js';
+import { ITEMS, ITEM_CATEGORIES } from './data/items.js';
 
-const icons = { snowflake: Snowflake, 'arrow-up-right': ArrowUpRight, github: CodeXml, 'flask-conical': FlaskConical, 'bow-arrow': BowArrow, 'sliders-horizontal': SlidersHorizontal, 'rotate-ccw': RotateCcw, 'pencil-ruler': PencilRuler, 'shield-check': ShieldCheck, activity: Activity, 'circle-alert': CircleAlert, 'circle-check': CircleCheck, crosshair: Crosshair, 'chart-no-axes-combined': ChartNoAxesCombined, info: Info, 'git-compare-arrows': GitCompareArrows, 'triangle-alert': TriangleAlert, gauge: Gauge, 'repeat-2': Repeat2, 'book-open': BookOpen, 'chevron-down': ChevronDown, sparkles: Sparkles, 'wand-sparkles': WandSparkles, target: Target, flag: Flag };
+const icons = {
+  snowflake: Snowflake,
+  'rotate-ccw': RotateCcw,
+  zap: Zap,
+  shield: Shield,
+  sparkles: Sparkles,
+  'sliders-horizontal': SlidersHorizontal,
+};
+
 const $ = (id) => document.getElementById(id);
-const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-const fmt = (value) => value.toFixed(2);
-const threshold = (value) => Number.isFinite(value) ? String(value) : '无有限急速解';
-let mode = 'ashe';
-let currentResult = null;
-let lastAnnouncement = '';
-const savedModes = {};
-const defaultSkills = () => ({ A: { key: 'E', rank: 2, name: HEROES.ashe.skills.E.name, base: 80, extra: 0 }, B: { key: 'R', rank: 2, name: HEROES.ashe.skills.R.name, base: 80, extra: 0 } });
-let skills = defaultSkills();
+
+let heroKey = 'ashe';
+let rankA = 2; // 艾希 E
+let rankB = 2; // 艾希 R
+let rankUlt = 3; // 死歌 / 船长 默认 3 级大招
+let selectedItems = ['nashor']; // 初始默认带纳什之牙体验联动
+let activeItemCategory = 'all';
+let isAllItemsCollapsed = false;
+const collapsedItemIds = new Set();
+let isAllAugmentsCollapsed = false;
 
 function hydrateIcons(root = document) {
   root.querySelectorAll('[data-icon]').forEach((element) => {
     const icon = icons[element.dataset.icon];
-    if (icon && !element.firstElementChild) element.replaceChildren(createElement(icon, { 'aria-hidden': 'true', focusable: 'false' }));
+    if (icon && !element.firstElementChild) {
+      element.replaceChildren(createElement(icon, { 'aria-hidden': 'true', focusable: 'false' }));
+    }
   });
 }
 
-function renderSkillFields() {
-  $('skills-fields').innerHTML = ['A', 'B'].map((side) => {
-    const skill = skills[side];
-    const rankCount = mode === 'ashe' ? HEROES.ashe.skills[skill.key].baseCooldowns.length : 5;
-    return `<div class="skill-field"><div class="skill-field-head"><span class="skill-key ${side === 'B' ? 'r-key' : ''}">${escapeHtml(mode === 'ashe' ? skill.key : side)}</span><span>技能 ${side}</span>${mode === 'ashe' ? `<select id="key-${side}" data-side="${side}" aria-label="技能 ${side} 选择">${['W', 'E', 'R'].map((key) => `<option value="${key}" ${key === skill.key ? 'selected' : ''}>${key}</option>`).join('')}</select>` : ''}</div>
-      <label for="name-${side}">技能名称</label><input id="name-${side}" type="text" maxlength="32" value="${escapeHtml(skill.name)}" required>
-      <label for="rank-${side}">技能等级</label>${mode === 'ashe' ? `<select id="rank-${side}" data-side="${side}">${Array.from({ length: rankCount }, (_, index) => `<option value="${index + 1}" ${index + 1 === Number(skill.rank) ? 'selected' : ''}>${index + 1} 级</option>`).join('')}</select>` : `<input id="rank-${side}" type="number" min="1" max="99" step="1" value="${escapeHtml(skill.rank)}" inputmode="numeric">`}
-      <label for="base-${side}">基础冷却</label><div class="input-with-unit"><input id="base-${side}" type="number" min="0" step="any" value="${escapeHtml(skill.base)}" inputmode="decimal" aria-describedby="base-hint-${side}"><span>秒</span></div><span class="sr-only" id="base-hint-${side}">基础冷却必须大于 0；寒冰预设也可编辑</span>
-      <label for="extra-${side}">独立技能急速</label><div class="input-with-unit"><input id="extra-${side}" type="number" min="0" step="any" value="${escapeHtml(skill.extra)}" inputmode="decimal"><span>AH</span></div>
-    </div>`;
-  }).join('');
+function getHero() {
+  return HEROES[heroKey] || HEROES.ashe;
 }
 
-function renderAugments() {
-  $('augment-fields').innerHTML = Object.values(AUGMENTS).map((augment) => {
-    const isArchmage = augment.id === 'archmage';
-    return `<div class="augment"><span class="augment-icon" data-icon="${isArchmage ? 'sparkles' : 'wand-sparkles'}"></span><div><div class="augment-name">${escapeHtml(augment.name)}</div><div class="augment-copy">${isArchmage ? '向另一技能返还基础 CD' : '在急速 CDR 上加算冷却缩减'}</div></div><label class="switch"><input type="checkbox" id="${augment.id}-enabled" checked aria-label="启用${escapeHtml(augment.name)}"><span class="switch-track"></span></label><div class="augment-bottom"><label for="${augment.id}">${isArchmage ? '基础 CD 返还比例' : '加算冷却缩减'}</label><div class="input-with-unit"><input type="number" id="${augment.id}" min="0" max="100" step="any" value="${augment.defaultRatio * 100}" inputmode="decimal"><span>%</span></div></div></div>`;
-  }).join('');
+function renderHeroUI() {
+  const isAshe = heroKey === 'ashe';
+  const hero = getHero();
+
+  // 更新导航 Tabs 状态
+  document.querySelectorAll('.hero-tab').forEach((tab) => {
+    const active = tab.dataset.hero === heroKey;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+
+  $('archmage-bar').hidden = !isAshe;
+  $('preset-chips').hidden = !isAshe;
+  $('ashe-skills-grid').hidden = !isAshe;
+  $('ult-focus-grid').hidden = isAshe;
+  $('breakdown-malignance-row').hidden = isAshe;
+
+  if (isAshe) {
+    const contA = $('ranks-skill-a');
+    const contB = $('ranks-skill-b');
+    const cdsE = hero.skills.E.baseCooldowns;
+    const cdsR = hero.skills.R.baseCooldowns;
+
+    $('disp-skill-a-cd').textContent = String(cdsE[rankA - 1] || cdsE[0]);
+    $('disp-skill-b-cd').textContent = String(cdsR[rankB - 1] || cdsR[0]);
+
+    contA.innerHTML = cdsE.map((_, idx) => {
+      const r = idx + 1;
+      return `<button type="button" data-rank="${r}" class="rank-pill ${r === rankA ? 'active' : ''}">${r}</button>`;
+    }).join('');
+
+    contB.innerHTML = cdsR.map((_, idx) => {
+      const r = idx + 1;
+      return `<button type="button" data-rank="${r}" class="rank-pill ${r === rankB ? 'active' : ''}">${r}</button>`;
+    }).join('');
+
+    contA.querySelectorAll('.rank-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        rankA = Number(btn.dataset.rank);
+        renderHeroUI();
+        update();
+      });
+    });
+
+    contB.querySelectorAll('.rank-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        rankB = Number(btn.dataset.rank);
+        renderHeroUI();
+        update();
+      });
+    });
+
+    $('chip-2e2r')?.classList.toggle('active', rankA === 2 && rankB === 2);
+    $('chip-4e3r')?.classList.toggle('active', rankA === 4 && rankB === 3);
+  } else {
+    // 死歌 / 船长 聚焦大招 R 选择
+    $('ult-hero-tag').textContent = hero.name;
+    $('disp-ult-name').textContent = `R ${hero.skills.R.name}`;
+    const cdsR = hero.skills.R.baseCooldowns;
+    const contUlt = $('ranks-ult-only');
+    const currentR = cdsR[Math.min(rankUlt - 1, cdsR.length - 1)] || cdsR[0];
+    $('disp-ult-base-cd').textContent = String(currentR);
+
+    contUlt.innerHTML = cdsR.map((cd, idx) => {
+      const r = idx + 1;
+      return `<button type="button" data-rank="${r}" class="rank-pill ${r === rankUlt ? 'active' : ''}">${r} 级 · ${cd}s</button>`;
+    }).join('');
+
+    contUlt.querySelectorAll('.rank-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        rankUlt = Number(btn.dataset.rank);
+        renderHeroUI();
+        update();
+      });
+    });
+  }
+
+  $('hero-tip-note').textContent = hero.tip || '';
 }
 
-function captureSkills() {
-  ['A', 'B'].forEach((side) => {
-    skills[side] = { key: $(`key-${side}`)?.value ?? skills[side].key, rank: $(`rank-${side}`).value, name: $(`name-${side}`).value, base: $(`base-${side}`).value, extra: $(`extra-${side}`).value };
+// 渲染 6 格已装备栏
+function renderInventorySlots() {
+  const container = $('inventory-slots');
+  const countEl = $('disp-item-count');
+  countEl.textContent = selectedItems.length >= 6
+    ? '已选 6 / 6 件 · 已满含鞋子'
+    : `已选 ${selectedItems.length} / 6 件含鞋子`;
+  countEl.classList.toggle('text-amber', selectedItems.length >= 6);
+
+  const slotsHtml = [];
+  for (let i = 0; i < 6; i += 1) {
+    const itemId = selectedItems[i];
+    if (itemId && ITEMS[itemId]) {
+      const item = ITEMS[itemId];
+      slotsHtml.push(`
+        <div class="inv-slot filled" data-index="${i}" data-id="${itemId}" title="点击卸下 ${item.name}">
+          <img class="inv-slot-img" src="${item.img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+          <span class="inv-slot-icon" style="display:none">${item.icon}</span>
+          <span class="inv-slot-name">${item.name.split(' ')[0]}</span>
+          <span class="inv-slot-remove-badge">✕</span>
+        </div>
+      `);
+    } else {
+      slotsHtml.push(`
+        <div class="inv-slot empty" title="空装备槽位">
+          <span>+ 空格</span>
+        </div>
+      `);
+    }
+  }
+  container.innerHTML = slotsHtml.join('');
+
+  container.querySelectorAll('.inv-slot.filled').forEach((slot) => {
+    slot.addEventListener('click', () => {
+      const idx = Number(slot.dataset.index);
+      selectedItems.splice(idx, 1);
+      renderInventorySlots();
+      renderItemsPicker();
+      update();
+    });
   });
 }
 
-function setMode(nextMode) {
-  if (nextMode === mode) return;
-  captureSkills();
-  savedModes[mode] = structuredClone(skills);
-  skills = savedModes[nextMode] ? structuredClone(savedModes[nextMode]) : structuredClone(skills);
-  if (nextMode === 'ashe' && !savedModes.ashe) skills = defaultSkills();
-  mode = nextMode;
-  updateModePresentation();
-  renderSkillFields();
-  update();
-}
+// 渲染可选装备卡片库
+function renderItemsPicker() {
+  const container = $('items-picker-grid');
+  const items = Object.values(ITEMS);
+  const filtered = activeItemCategory === 'all'
+    ? items
+    : items.filter((it) => it.category === activeItemCategory);
 
-function updateModePresentation() {
-  document.querySelectorAll('[data-mode]').forEach((button) => {
-    const selected = button.dataset.mode === mode;
-    button.classList.toggle('selected', selected);
-    button.setAttribute('aria-pressed', String(selected));
+  container.innerHTML = filtered.map((item) => {
+    const isEquipped = selectedItems.includes(item.id);
+    const isCollapsed = isAllItemsCollapsed || collapsedItemIds.has(item.id);
+    const statTags = [];
+    if (item.ah) statTags.push(`<span class="stat-tag tag-ah">+${item.ah} AH</span>`);
+    if (item.as) statTags.push(`<span class="stat-tag tag-as">+${item.as}% 攻速</span>`);
+    if (item.ap) statTags.push(`<span class="stat-tag tag-ap">+${item.ap} AP</span>`);
+    if (item.ultAh) statTags.push(`<span class="stat-tag tag-ult">+${item.ultAh} 大招AH</span>`);
+
+    return `
+      <div class="item-card ${isEquipped ? 'equipped' : ''} ${isCollapsed ? 'collapsed' : ''}" data-id="${item.id}" role="button" tabindex="0">
+        <div class="item-card-top">
+          <div class="item-card-header">
+            <img class="item-card-img" src="${item.img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+            <span class="item-card-icon" style="display:none">${item.icon}</span>
+            <span class="item-card-title">${item.name}</span>
+          </div>
+          <div class="item-card-actions">
+            <span class="item-card-badge">${isEquipped ? '已穿戴' : '穿戴'}</span>
+            <button type="button" class="btn-item-fold" data-id="${item.id}" aria-label="折叠或展开装备卡片" title="折叠或展开">▾</button>
+          </div>
+        </div>
+        <div class="item-card-stats">
+          ${statTags.join('')}
+        </div>
+        <p class="item-card-note">${item.note}</p>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.btn-item-fold').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (collapsedItemIds.has(id)) {
+        collapsedItemIds.delete(id);
+      } else {
+        collapsedItemIds.add(id);
+      }
+      const card = btn.closest('.item-card');
+      if (card) {
+        card.classList.toggle('collapsed');
+      }
+    });
   });
-  $('custom-hero-field').hidden = mode !== 'custom';
-  $('hero-note').textContent = mode === 'ashe' ? '艾希 · 技能数据来自需求文档，游戏版本未核验' : '自定义双技能 · 名称、等级与基础 CD 均可编辑';
-  $('skill-note').textContent = mode === 'ashe' ? 'E 为充能恢复时间，最多 2 层；5 秒施放间隔未计入模型。Q 依赖普攻层数，不纳入普通 CD 互刷。' : '输入任意两个技能的基础 CD；等级仅作标记，不自动改变自定义基础 CD。';
+
+  container.querySelectorAll('.item-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-item-fold')) return;
+      const id = card.dataset.id;
+      const itemToEquip = ITEMS[id];
+      const idx = selectedItems.indexOf(id);
+      if (idx >= 0) {
+        selectedItems.splice(idx, 1);
+      } else {
+        // 如果是鞋子，英雄只能穿戴一双鞋，自动替换已有鞋子
+        if (itemToEquip?.category === 'boots') {
+          const existingBootIdx = selectedItems.findIndex((itId) => ITEMS[itId]?.category === 'boots');
+          if (existingBootIdx >= 0) {
+            selectedItems[existingBootIdx] = id;
+            renderInventorySlots();
+            renderItemsPicker();
+            update();
+            return;
+          }
+        }
+        // 加鞋子在内严格只能选 6 件
+        if (selectedItems.length >= 6) {
+          const invContainer = document.querySelector('.inventory-slots-container');
+          if (invContainer) {
+            invContainer.classList.remove('flash-full');
+            void invContainer.offsetWidth;
+            invContainer.classList.add('flash-full');
+          }
+          const countEl = $('disp-item-count');
+          countEl.textContent = '已满 6 件含鞋子 · 请点击格位卸下';
+          countEl.classList.add('text-amber');
+          return;
+        }
+        selectedItems.push(id);
+      }
+      renderInventorySlots();
+      renderItemsPicker();
+      update();
+    });
+  });
 }
 
-function inputError(element, message) {
-  element.setAttribute('aria-invalid', 'true');
-  element.setCustomValidity(message);
-  throw new RangeError(message);
-}
-
-function readNumber(id, label, { positive = false, max = Infinity, integer = false } = {}) {
-  const element = $(id);
-  const value = element.value.trim() === '' ? NaN : Number(element.value);
-  if (!Number.isFinite(value)) inputError(element, `${label}不能为空，且必须为有限数值。`);
-  if (value < 0 || (positive && value === 0)) inputError(element, `${label}必须${positive ? '大于 0' : '大于等于 0'}。`);
-  if (value > max) inputError(element, `${label}不能超过 ${max}。`);
-  if (integer && !Number.isInteger(value)) inputError(element, `${label}必须为整数。`);
-  return value;
-}
-
-function readName(id, label) {
-  const element = $(id);
-  const value = element.value.trim();
-  if (!value) inputError(element, `${label}不能为空。`);
-  return value;
-}
-
-function readConfiguration() {
-  $('config-form').querySelectorAll('[aria-invalid]').forEach((element) => { element.removeAttribute('aria-invalid'); element.setCustomValidity(''); });
-  if (mode === 'custom') readName('hero-name', '英雄名称');
-  const names = { A: readName('name-A', '技能 A 名称'), B: readName('name-B', '技能 B 名称') };
-  const ranks = { A: readNumber('rank-A', '技能 A 等级', { positive: true, integer: true, max: 99 }), B: readNumber('rank-B', '技能 B 等级', { positive: true, integer: true, max: 99 }) };
-  const input = {
-    baseA: readNumber('base-A', '技能 A 基础冷却', { positive: true }),
-    baseB: readNumber('base-B', '技能 B 基础冷却', { positive: true }),
-    haste: readNumber('haste', '通用技能急速'),
-    extraHasteA: readNumber('extra-A', '技能 A 独立急速'),
-    extraHasteB: readNumber('extra-B', '技能 B 独立急速'),
-    archmage: $('archmage-enabled').checked ? readNumber('archmage', '大法师比例', { max: 100 }) / 100 : 0,
-    sorcerer: $('sorcerer-enabled').checked ? readNumber('sorcerer', '术士比例', { max: 100 }) / 100 : 0,
-  };
-  return { input, names, ranks, keys: { A: mode === 'ashe' ? $('key-A').value : 'A', B: mode === 'ashe' ? $('key-B').value : 'B' } };
-}
-
-function renderMetrics(config, result) {
-  const { input, names, ranks, keys } = config;
-  $('skill-metrics').innerHTML = ['A', 'B'].map((side) => {
-    const other = side === 'A' ? 'B' : 'A';
-    const effectiveHaste = input.haste + input[`extraHaste${side}`];
-    const remaining = result[`remain${side}`];
-    return `<article class="metric-skill"><div class="metric-skill-title"><span class="skill-key ${side === 'B' ? 'r-key' : ''}">${escapeHtml(keys[side])}</span><h3>${escapeHtml(names[side])}<small>${ranks[side]} 级${mode === 'ashe' && keys[side] === 'E' ? ' · 充能恢复模型' : ' · 普通冷却模型'}</small></h3></div>
-      <div class="metric-row"><span>基础冷却</span><strong>${fmt(input[`base${side}`])} 秒</strong></div>
-      <div class="metric-row"><span>有效技能急速</span><strong>${fmt(effectiveHaste)} AH</strong></div>
-      <div class="metric-row"><span>综合冷却缩减</span><strong class="ice-value">${fmt(result[`cdr${side}`] * 100)}%</strong></div>
-      <div class="metric-row"><span>实际冷却</span><strong>${fmt(result[`cd${side}`])} 秒</strong></div>
-      <div class="metric-row"><span>来自 ${escapeHtml(keys[other])} 的返还</span><strong class="gold-value">${fmt(result[`refund${side}`])} 秒</strong></div>
-      <div class="metric-row final-row"><span>剩余冷却</span><strong class="${remaining <= 1e-8 ? 'success-value' : 'warning-value'}">${fmt(remaining)}<small> 秒</small></strong></div></article>`;
-  }).join('');
-}
-
-function renderCooldown(config, result) {
-  const { input, names, keys } = config;
-  $('cooldown-bars').innerHTML = ['A', 'B'].map((side) => {
-    const base = input[`base${side}`];
-    const cd = result[`cd${side}`];
-    const refund = Math.min(cd, result[`refund${side}`]);
-    const remaining = result[`remain${side}`];
-    const reduced = base - cd;
-    const descriptions = `冷却缩减 ${fmt(reduced)} 秒，有效返还 ${fmt(refund)} 秒，剩余冷却 ${fmt(remaining)} 秒`;
-    return `<div><div class="bar-heading"><span>${escapeHtml(keys[side])} · ${escapeHtml(names[side])}</span><span>基础 CD ${fmt(base)} 秒</span></div><div class="cooldown-track" role="img" aria-label="${escapeHtml(keys[side])}：${descriptions}"><span class="cooldown-segment segment-cdr" style="width:${result[`cdr${side}`] * 100}%" title="冷却缩减 ${fmt(reduced)} 秒"></span><span class="cooldown-segment segment-refund" style="width:${refund / base * 100}%" title="有效返还 ${fmt(refund)} 秒"></span><span class="cooldown-segment segment-remain" style="width:${remaining / base * 100}%" title="剩余冷却 ${fmt(remaining)} 秒"></span></div><div class="bar-values"><span>缩减 ${fmt(reduced)} 秒</span><span>有效返还 ${fmt(refund)} 秒</span><span>剩余 ${fmt(remaining)} 秒</span></div></div>`;
-  }).join('');
-  const flowSide = (side) => `<div class="flow-skill"><span class="skill-key ${side === 'B' ? 'r-key' : ''}">${escapeHtml(keys[side])}</span><span>${escapeHtml(names[side])}</span></div>`;
-  $('refund-flow').innerHTML = `${flowSide('A')}<div class="flow-paths"><div class="flow-path">释放 ${escapeHtml(keys.A)} → 返还 ${escapeHtml(keys.B)} <strong>${fmt(result.refundB)} 秒</strong></div><div class="flow-path reverse">返还 ${escapeHtml(keys.A)} <strong>${fmt(result.refundA)} 秒</strong> ← 释放 ${escapeHtml(keys.B)}</div></div>${flowSide('B')}`;
-}
-
-function renderSummary(config, result) {
-  const finite = Number.isFinite(result.minHaste);
-  const gap = finite ? Math.max(0, result.minHaste - config.input.haste) : Infinity;
-  $('min-haste').textContent = threshold(result.minHaste);
-  $('threshold-unit').hidden = !finite;
-  $('min-haste').parentElement.classList.toggle('no-solution', !finite);
-  $('threshold-gap').textContent = !finite ? '当前返还与术士配置无法给出有限阈值' : gap > 0 ? `距离最低整数阈值还差 ${fmt(gap)} 急速` : `当前急速 ${fmt(config.input.haste)}，已达到理论阈值`;
-  $('threshold-gap').classList.toggle('warning', !result.theoreticalLoop);
-  $('loop-status').className = `status-pill ${result.theoreticalLoop ? 'success' : 'warning'}`;
-  $('loop-status').innerHTML = `<span data-icon="${result.theoreticalLoop ? 'circle-check' : 'circle-alert'}"></span>${result.theoreticalLoop ? '理论条件已达成' : '理论条件未达成'}`;
-  $('loop-status').nextElementSibling.innerHTML = result.theoreticalLoop ? '一次对向释放后，<br>两技能剩余冷却均归零。' : '一次对向释放后，<br>仍有技能存在剩余冷却。';
-  $('apply-min').disabled = !finite;
-  $('apply-min').title = finite ? `将通用急速设为 ${result.minHaste}` : '无有限急速解，无法应用';
-}
-
-function renderLeveling(config) {
-  const options = { haste: config.input.haste, extraHasteA: config.input.extraHasteA, extraHasteB: config.input.extraHasteB, archmage: config.input.archmage, sorcerer: config.input.sorcerer };
-  const rows = getAsheRecommendations(options);
-  const isStandardER = mode === 'ashe' && config.keys.A === 'E' && config.keys.B === 'R';
-  $('table-context').textContent = isStandardER ? '当前配置列实时使用海克斯及独立急速' : '寒冰 ER 参考表；A 独立急速映射 E，B 映射 R';
-  $('level-table').innerHTML = rows.map((row) => {
-    const reference = { baseA: row.baseA, baseB: row.baseB, archmage: .3, extraHasteA: 0, extraHasteB: 0 };
-    const without = calculateCooldown({ ...reference, sorcerer: 0 }).minHaste;
-    const withSorcerer = calculateCooldown({ ...reference, sorcerer: .1 }).minHaste;
-    const isCurrent = isStandardER && config.ranks.A === row.eRank && config.ranks.B === row.rRank && config.input.baseA === row.baseA && config.input.baseB === row.baseB;
-    const recommended = (row.eRank === 2 && row.rRank === 2) || (row.eRank === 4 && row.rRank === 3);
-    return `<tr class="${isCurrent ? 'current-row ' : ''}${recommended ? 'recommended-row' : ''}"><td><span class="table-rank">${row.eRank}</span></td><td><span class="table-rank r-rank">${row.rRank}</span></td><td>${fmt(row.baseA)} 秒</td><td>${fmt(row.baseB)} 秒</td><td>${without} AH</td><td>${withSorcerer} AH</td><td class="table-status ${row.theoreticalLoop ? '' : 'warning'}">${Number.isFinite(row.minHaste) ? `${row.minHaste} AH` : '无有限急速解'}</td><td><button type="button" class="row-apply" data-preset="${row.eRank},${row.rRank}" aria-label="应用 ${row.eRank}E 加 ${row.rRank}R 加点">${isCurrent ? '已选加点' : '应用加点'}</button></td></tr>`;
-  }).join('');
-  $('recommendations').innerHTML = [{ e: 2, r: 2, label: '中期成型', icon: 'target' }, { e: 4, r: 3, label: '后期进阶', icon: 'flag' }].map(({ e, r, label, icon }) => {
-    const row = rows.find((item) => item.eRank === e && item.rRank === r);
-    return `<article class="recommendation"><span class="recommendation-icon" data-icon="${icon}"></span><div><h3>${e}E + ${r}R<small>${label}</small></h3><p>基础 CD ${row.baseA} / ${row.baseB} 秒 · ${threshold(row.minHaste)}${Number.isFinite(row.minHaste) ? ' 急速' : ''}</p></div><button type="button" data-preset="${e},${r}" aria-label="应用 ${label} ${e}E 加 ${r}R 加点">应用加点</button></article>`;
-  }).join('');
-}
-
-function renderInvalid(message) {
-  currentResult = null;
-  $('form-error').textContent = message;
-  $('form-error').hidden = false;
-  $('result-content').hidden = true;
-  $('invalid-result').hidden = false;
-  $('result-error').textContent = message;
-  $('apply-min').disabled = true;
-  $('cooldown-bars').innerHTML = '<p class="empty-chart">修正配置后显示冷却分解。</p>';
-  $('refund-flow').replaceChildren();
-  $('recommendations').replaceChildren();
-  $('level-table').innerHTML = '<tr><td colspan="8">请先修正配置，随后恢复加点对照。</td></tr>';
-}
-
-function updateRange() {
-  const value = Number($('haste').value);
-  const position = Number.isFinite(value) ? Math.min(500, Math.max(0, value)) : 0;
-  $('haste-range').value = String(position);
-  $('haste-range').style.setProperty('--range-fill', `${position / 5}%`);
-}
+let lastAnnouncement = '';
+let currentCalcResult = null;
 
 function update() {
   try {
-    const config = readConfiguration();
-    const result = calculateCooldown(config.input);
-    currentResult = result;
-    $('form-error').hidden = true;
-    $('result-content').hidden = false;
-    $('invalid-result').hidden = true;
-    renderSummary(config, result);
-    renderMetrics(config, result);
-    renderCooldown(config, result);
-    renderLeveling(config);
-    const announcement = `${result.theoreticalLoop ? '理论互刷条件已达成' : '理论互刷条件未达成'}，最低通用急速：${threshold(result.minHaste)}`;
-    if (announcement !== lastAnnouncement) { $('announcement').textContent = announcement; lastAnnouncement = announcement; }
+    const hero = getHero();
+
+    // 1. 装备属性与海斗锻体属性汇总计算与被动联动
+    const isLichActive = $('chk-lich-spellblade')?.checked || false;
+    const isAdaptActive = $('chk-adapt')?.checked || false;
+    const isCrownActive = $('chk-crown')?.checked || false;
+    const crownStacks = Math.max(0, Number($('num-crown-stacks')?.value) || 0);
+    const torchStacks = Math.max(0, Math.min(5, Number($('num-torch-stacks')?.value) || 0));
+
+    // 读取海斗锻体额外属性（海斗属性铁砧）
+    const anvilAs = Math.max(0, Number($('num-extra-as')?.value) || 0);
+    const anvilAp = Math.max(0, Number($('num-extra-ap')?.value) || 0);
+    const anvilAd = Math.max(0, Number($('num-extra-ad')?.value) || 0);
+
+    const equipStats = calculateEquipmentStats(selectedItems, {
+      lichBaneActive: isLichActive,
+      adaptActive: isAdaptActive,
+      heavyCrownActive: isCrownActive,
+      heavyCrownStacks: crownStacks,
+      torchStacks,
+      anvilAs,
+      anvilAp,
+      anvilAd,
+    });
+
+    // 显示/隐藏巫妖之祸咒刃开关
+    $('lich-spellblade-box').hidden = !equipStats.hasLichBane;
+
+    // 显示/隐藏黯炎火炬被动开关
+    if ($('torch-stacks-box')) {
+      $('torch-stacks-box').hidden = !equipStats.hasTorch;
+      if ($('disp-torch-ap-bonus')) {
+        $('disp-torch-ap-bonus').textContent = `+${torchStacks * 4}% 法强`;
+      }
+    }
+
+    // 更新装备汇总条
+    $('sum-item-ah').textContent = `+${equipStats.baseAh} AH`;
+    $('sum-item-as').textContent = `+${equipStats.totalAs}% AS`;
+    $('sum-item-ap').textContent = `+${equipStats.totalAp} AP`;
+    $('sum-item-ult-ah').textContent = `+${equipStats.ultAh} AH`;
+
+    // 2. 读取海克斯机制并进行转化计算
+    const puristCaster = $('chk-purist').checked;
+    const totalAs = equipStats.totalAs;
+
+    const eureka = $('chk-eureka').checked;
+    const totalAp = equipStats.totalAp;
+
+    const shrinkEngine = $('chk-shrink').checked;
+    const shrinkStacks = Math.max(0, Number($('num-shrink-stacks').value) || 0);
+
+    const infiniteRecursion = $('chk-recursion').checked;
+    const kills = Math.max(0, Number($('num-recursion-kills').value) || 0);
+
+    const archmage = heroKey === 'ashe' && $('chk-archmage').checked;
+
+    // 基础技能急速严格来自装备，无需额外手动滑块补偿
+    const baseHaste = Math.min(500, equipStats.baseAh);
+
+    // 动态标签更新（详细展示装备、锻体与符文装备被动放大明细）
+    if ($('tag-purist-bonus')) {
+      $('tag-purist-bonus').textContent = anvilAs > 0 || (isCrownActive && crownStacks > 0)
+        ? `装备 ${equipStats.rawAs}% + 锻体 ${anvilAs}%${isCrownActive && crownStacks > 0 ? ` · 王冠 +${(crownStacks * 5)}%` : ''} ➔ 攻速 ${equipStats.totalAs}% ➔ 转化 +${(totalAs * 0.65).toFixed(1)} AH`
+        : `装备攻速 ${equipStats.totalAs}% ➔ 转化 +${(totalAs * 0.65).toFixed(1)} AH`;
+    }
+    if ($('tag-eureka-bonus')) {
+      $('tag-eureka-bonus').textContent = equipStats.apMultiplier > 1 || anvilAp > 0 || (isCrownActive && crownStacks > 0)
+        ? `基础 ${equipStats.totalRawAp} AP${isCrownActive && crownStacks > 0 ? ` · 王冠 +${(crownStacks * 5)}%` : ''} · 放大 ${equipStats.apMultiplier.toFixed(2)}x ➔ 最终 ${totalAp} AP ➔ 转化 +${(totalAp * 0.3).toFixed(1)} AH`
+        : `装备法强 ${totalAp} AP ➔ 转化 +${(totalAp * 0.3).toFixed(1)} AH`;
+    }
+    $('tag-shrink-bonus').textContent = `当前层数提供: +${shrinkStacks * 10} AH`;
+    $('tag-recursion-bonus').textContent = `当前提供: +${infiniteRecursion ? 60 + kills * 3 : 0} AH`;
+    if ($('tag-adapt-bonus')) {
+      $('tag-adapt-bonus').textContent = anvilAd > 0 || (isCrownActive && crownStacks > 0)
+        ? `装备 ${equipStats.rawAd} AD + 锻体 ${anvilAd} AD${isCrownActive && crownStacks > 0 ? ` · 王冠 +${(crownStacks * 5)}%` : ''} ➔ 转为法强 +${Math.round(equipStats.adConvertedAp)} AP`
+        : `装备攻击力 ${equipStats.rawAd} AD ➔ 转为法强 +${Math.round(equipStats.adConvertedAp)} AP`;
+    }
+    if ($('tag-crown-bonus')) {
+      const pct = (crownStacks * 5).toFixed(0);
+      $('tag-crown-bonus').textContent = isCrownActive
+        ? `【背负】${crownStacks} 层 ➔ 额外3属性提升 +${pct}% (AD/AP/AS)`
+        : `未启用 · 每层击杀参与 +5% 额外3属性`;
+    }
+
+    // 3. 计算海克斯大乱斗增益急速与加算 CDR
+    const asHaste = puristCaster ? totalAs * 0.65 : 0;
+    const apHaste = eureka ? totalAp * 0.3 : 0;
+    const shrinkHaste = shrinkEngine ? shrinkStacks * 10 : 0;
+    const recursionHaste = infiniteRecursion ? 60 + kills * 3 : 0;
+
+    const { bonusHaste, totalHaste: rawTotalHaste, bonusCdr } = calculateMayhemHaste({
+      baseHaste,
+      puristCaster,
+      attackSpeed: totalAs,
+      eureka,
+      ap: totalAp,
+      shrinkEngine,
+      shrinkStacks,
+      infiniteRecursion,
+      kills,
+    });
+
+    // 技能急速最大值限制为 500 AH
+    const totalHaste = Math.min(500, rawTotalHaste);
+    const totalUltHaste = Math.min(500, totalHaste + equipStats.ultAh);
+
+    $('lbl-aug-bonus').textContent = `+${Math.round(bonusHaste)} 强化急速注入`;
+
+    // 全息急速池分解更新
+    $('breakdown-base-val').textContent = `${Math.round(baseHaste)} AH · 装备提供基础急速`;
+    $('breakdown-as-val').textContent = `+${asHaste.toFixed(1)} AH`;
+    $('breakdown-ap-val').textContent = `+${apHaste.toFixed(1)} AH`;
+    $('breakdown-shrink-val').textContent = `+${shrinkHaste.toFixed(1)} AH`;
+    $('breakdown-recursion-val').textContent = `+${recursionHaste.toFixed(1)} AH`;
+    $('breakdown-malignance-val').textContent = `+${equipStats.ultAh.toFixed(1)} AH`;
+    $('breakdown-malignance-row').hidden = equipStats.ultAh <= 0;
+    $('breakdown-total-val').textContent = `${Math.round(totalHaste)} AH`;
+    $('breakdown-ult-val').textContent = `${Math.round(totalUltHaste)} AH`;
+
+    const card = $('card-verdict');
+    const badge = $('status-badge');
+    const statusText = $('status-text');
+
+    if (heroKey === 'ashe') {
+      // 1. 寒冰射手：双技能对向互刷推演
+      const cdsE = hero.skills.E.baseCooldowns;
+      const cdsR = hero.skills.R.baseCooldowns;
+      const baseA = cdsE[rankA - 1] || cdsE[0];
+      const baseB = cdsR[rankB - 1] || cdsR[0];
+
+      const archRatio = archmage ? 0.3 : 0;
+      const calcResult = calculateCooldown({
+        baseA,
+        baseB,
+        haste: totalHaste,
+        extraHasteA: 0,
+        extraHasteB: equipStats.ultAh,
+        archmage: archRatio,
+        sorcerer: bonusCdr,
+      });
+
+      currentCalcResult = calcResult;
+      const isLoop = calcResult.theoreticalLoop;
+      const isFinite = Number.isFinite(calcResult.minHaste);
+      // 技能急速最大值为 500 AH，超过 500 AH 则判定为当前机制下不可达成
+      const isAchievable = isFinite && calcResult.minHaste <= 500;
+
+      $('disp-total-cdr-badge').textContent = `综合 CDR: ${(calcResult.cdrA * 100).toFixed(1)}%`;
+      if ($('disp-entry-sub')) {
+        $('disp-entry-sub').textContent = `当前常规 ${Math.round(totalHaste)} AH · 大招 ${Math.round(totalUltHaste)} AH · 综合 CDR ${(calcResult.cdrA * 100).toFixed(1)}%`;
+      }
+
+      if (!archmage) {
+        // 未勾选大法师：不进行互刷返还，直接展示当前急速下的双技能最终实际冷却与压缩幅度
+        $('label-stat-1').textContent = '当前技能急速 / 大招急速';
+        $('val-stat-1').innerHTML = `<span class="dual-haste">${Math.round(totalHaste)} / ${Math.round(totalUltHaste)}</span><span class="number-unit">AH</span>`;
+        $('sub-stat-1').className = 'block-sub text-muted';
+        $('sub-stat-1').textContent = equipStats.ultAh > 0 ? `常规 ${Math.round(totalHaste)} AH · 大招含专属 +${equipStats.ultAh} AH` : '常规急速与大招急速一致';
+
+        $('label-stat-2').textContent = 'E 鹰击长空 最终冷却';
+        $('val-stat-2').innerHTML = `${calcResult.cdA.toFixed(1)}<span class="number-unit">s</span>`;
+        $('sub-stat-2').className = 'block-sub text-emerald';
+        $('sub-stat-2').textContent = `原基础 ${baseA}s ➔ 压缩 ${(baseA - calcResult.cdA).toFixed(1)}s`;
+
+        $('label-stat-3').textContent = 'R 魔法水晶箭 最终冷却';
+        $('val-stat-3').innerHTML = `${calcResult.cdB.toFixed(1)}<span class="number-unit">s</span>`;
+        $('sub-stat-3').className = 'block-sub text-emerald';
+        $('sub-stat-3').textContent = `原基础 ${baseB}s ➔ 压缩 ${(baseB - calcResult.cdB).toFixed(1)}s`;
+
+        card.className = 'deck-card verdict-telemetry-card state-success';
+        badge.className = 'verdict-status-pill pure-haste';
+        statusText.textContent = `常规冷却模式 · 技能冷却压缩 ${(calcResult.cdrA * 100).toFixed(1)}%`;
+      } else {
+        // 勾选大法师：互刷对向返还推演模式
+        // 指标 1：理论最低急速
+        $('label-stat-1').textContent = '理论互刷最低急速';
+        if (!isFinite) {
+          $('val-stat-1').innerHTML = '无有限解';
+        } else if (!isAchievable) {
+          $('val-stat-1').innerHTML = '<span class="text-amber">无法达成</span>';
+        } else {
+          $('val-stat-1').innerHTML = `${calcResult.minHaste}<span class="number-unit">AH</span>`;
+        }
+
+        // 指标 2：E 剩余 CD
+        $('label-stat-2').textContent = 'E 鹰击长空 互刷剩余';
+        $('val-stat-2').innerHTML = `${calcResult.remainA.toFixed(1)}<span class="number-unit">s</span>`;
+        $('sub-stat-2').className = 'block-sub text-muted';
+        $('sub-stat-2').textContent = `实际 ${calcResult.cdA.toFixed(1)}s · 返还 ${(calcResult.refundA).toFixed(0)}s`;
+
+        // 指标 3：R 剩余 CD
+        $('label-stat-3').textContent = 'R 水晶箭 互刷剩余';
+        $('val-stat-3').innerHTML = `${calcResult.remainB.toFixed(1)}<span class="number-unit">s</span>`;
+        $('sub-stat-3').className = 'block-sub text-muted';
+        $('sub-stat-3').textContent = `实际 ${calcResult.cdB.toFixed(1)}s · 返还 ${(calcResult.refundB).toFixed(0)}s`;
+
+        if (isLoop) {
+          card.className = 'deck-card verdict-telemetry-card state-success';
+          badge.className = 'verdict-status-pill success';
+          statusText.textContent = '已达成理论无限互刷！';
+          $('sub-stat-1').className = 'block-sub text-emerald';
+          $('sub-stat-1').textContent = `当前常规 ${Math.round(totalHaste)} AH · 大招 ${Math.round(totalUltHaste)} AH`;
+        } else if (!isAchievable) {
+          card.className = 'deck-card verdict-telemetry-card state-warning';
+          badge.className = 'verdict-status-pill warning';
+          statusText.textContent = '无法达成互刷 · 超出 500 急速上限';
+          $('sub-stat-1').className = 'block-sub text-amber';
+          $('sub-stat-1').textContent = isFinite ? `理论需 ${calcResult.minHaste} AH · 上限 500` : '无有限解';
+        } else {
+          const gap = Math.max(0, calcResult.minHaste - Math.round(totalHaste));
+          card.className = 'deck-card verdict-telemetry-card state-warning';
+          badge.className = 'verdict-status-pill warning';
+          statusText.textContent = `未达成互刷 · 还差 ${gap} 急速`;
+          $('sub-stat-1').className = 'block-sub text-amber';
+          $('sub-stat-1').textContent = `常规 ${Math.round(totalHaste)} AH · 差 ${gap} AH 达成归零`;
+        }
+      }
+    } else {
+      // 2. 死歌 / 船长：专注大招 R 极限压缩
+      const cdsR = hero.skills.R.baseCooldowns;
+      const baseR = cdsR[Math.min(rankUlt - 1, cdsR.length - 1)] || cdsR[0];
+      $('disp-ult-base-cd').textContent = String(baseR);
+
+      // 终极技能专属急速（装备如残疫 +20 终极急速）
+      const ultHaste = Math.min(500, totalHaste + equipStats.ultAh);
+      const cdrUlt = Math.min(0.999, Math.max(0, ultHaste / (100 + ultHaste) + bonusCdr));
+      const cdUlt = baseR * (1 - cdrUlt);
+      const reducedSeconds = baseR - cdUlt;
+
+      $('disp-total-cdr-badge').textContent = `大招综合 CDR: ${(cdrUlt * 100).toFixed(1)}%`;
+      if ($('disp-entry-sub')) {
+        $('disp-entry-sub').textContent = `当前常规 ${Math.round(totalHaste)} AH · 大招 ${Math.round(ultHaste)} AH · 综合 CDR ${(cdrUlt * 100).toFixed(1)}%`;
+      }
+      $('breakdown-total-val').textContent = `${Math.round(totalHaste)} AH`;
+      $('breakdown-ult-val').textContent = `${Math.round(ultHaste)} AH`;
+
+      card.className = 'deck-card verdict-telemetry-card state-success';
+      badge.className = 'verdict-status-pill pure-haste';
+      statusText.textContent = `大招冷却压缩 ${(cdrUlt * 100).toFixed(1)}%`;
+
+      // 指标 1：当前技能急速 与 大招急速
+      $('label-stat-1').textContent = '当前技能急速 / 大招急速';
+      $('val-stat-1').innerHTML = `<span class="dual-haste">${Math.round(totalHaste)} / ${Math.round(ultHaste)}</span><span class="number-unit">AH</span>`;
+      $('sub-stat-1').className = 'block-sub text-muted';
+      $('sub-stat-1').textContent = equipStats.ultAh > 0
+        ? `常规 ${Math.round(totalHaste)} AH · 大招加算 +${equipStats.ultAh} AH`
+        : `常规急速 ${Math.round(totalHaste)} AH · 大招同享加算`;
+
+      // 指标 2 (核心主角)：R 技能实际冷却
+      $('label-stat-2').textContent = `R ${hero.skills.R.name} 最终冷却`;
+      $('val-stat-2').innerHTML = `${cdUlt.toFixed(1)}<span class="number-unit">s</span>`;
+      $('sub-stat-2').className = 'block-sub text-emerald';
+      $('sub-stat-2').textContent = `原基础 ${baseR}s ➔ 压缩 ${reducedSeconds.toFixed(1)}s`;
+
+      // 指标 3：大招综合 CDR
+      $('label-stat-3').textContent = '大招综合冷却缩减';
+      $('val-stat-3').innerHTML = `${(cdrUlt * 100).toFixed(1)}<span class="number-unit">%</span>`;
+      $('sub-stat-3').className = 'block-sub text-muted';
+      $('sub-stat-3').textContent = puristCaster ? '含术师 +10% 突破上限 CDR' : '大招专属急速加算折算';
+    }
+
+    // 4. 终极大招全息伤害推演
+    const ultRank = heroKey === 'ashe' ? rankB : rankUlt;
+    const damageResult = calculateUltimateDamage({
+      heroKey,
+      rank: ultRank,
+      ap: totalAp,
+      ad: equipStats.totalAd,
+    });
+
+    if ($('card-damage')) {
+      $('disp-total-ap-badge').textContent = `法术强度: ${Math.round(totalAp)} AP`;
+      $('disp-dmg-hero-skill').textContent = `${damageResult.skillName} · 单次爆发`;
+      $('disp-dmg-total').innerHTML = `${damageResult.totalDamage}<span class="number-unit">点${damageResult.damageType}</span>`;
+      $('disp-dmg-summary').textContent = damageResult.summary;
+      $('chip-dmg-base').textContent = `基础伤害: ${damageResult.baseDamage}`;
+      $('chip-dmg-ratio').textContent = `加成: +${Math.round(damageResult.ratioBonus)}`;
+      $('chip-dmg-mult').textContent = `法强倍率: ${equipStats.apMultiplier.toFixed(2)}x`;
+    }
+
+    const announce = `${hero.name}，当前总急速 ${Math.round(totalHaste)}`;
+    if (announce !== lastAnnouncement) {
+      $('announcement').textContent = announce;
+      lastAnnouncement = announce;
+    }
   } catch (error) {
-    renderInvalid(error instanceof RangeError ? error.message : '暂时无法计算，请重置配置后重试。');
-    if (!(error instanceof RangeError)) console.error(error);
+    console.error('计算出错:', error);
   }
-  updateRange();
   hydrateIcons();
 }
 
-function applyPreset(eRank, rRank) {
-  captureSkills();
-  if (mode === 'custom') savedModes.custom = structuredClone(skills);
-  const extraA = $('extra-A').value;
-  const extraB = $('extra-B').value;
-  mode = 'ashe';
-  skills = { A: { key: 'E', rank: eRank, name: HEROES.ashe.skills.E.name, base: HEROES.ashe.skills.E.baseCooldowns[eRank - 1], extra: extraA }, B: { key: 'R', rank: rRank, name: HEROES.ashe.skills.R.name, base: HEROES.ashe.skills.R.baseCooldowns[rRank - 1], extra: extraB } };
-  updateModePresentation();
-  renderSkillFields();
-  update();
-  $('announcement').textContent = `已应用 ${eRank}E 加 ${rRank}R 加点，请检查当前急速是否达到理论阈值。`;
+// 事件初始化
+function initEvents() {
+  document.querySelectorAll('.hero-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      heroKey = tab.dataset.hero;
+      if (heroKey === 'ashe') {
+        rankA = 2;
+        rankB = 2;
+      } else {
+        rankUlt = 3;
+      }
+      renderHeroUI();
+      update();
+    });
+  });
+
+  // 装备分类选项卡
+  document.querySelectorAll('.item-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.item-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeItemCategory = tab.dataset.cat;
+      renderItemsPicker();
+    });
+  });
+
+  // 清空装备按钮
+  $('btn-clear-items').addEventListener('click', () => {
+    selectedItems = [];
+    renderInventorySlots();
+    renderItemsPicker();
+    update();
+  });
+
+  // 海克斯强化与装备被动事件
+  ['chk-purist', 'chk-eureka', 'chk-shrink', 'chk-recursion', 'chk-archmage', 'chk-lich-spellblade', 'chk-adapt', 'chk-crown'].forEach((id) => {
+    $(id)?.addEventListener('change', update);
+  });
+  ['num-extra-as', 'num-extra-ap', 'num-extra-ad', 'num-shrink-stacks', 'num-recursion-kills', 'num-torch-stacks', 'num-crown-stacks'].forEach((id) => {
+    $(id)?.addEventListener('input', update);
+  });
+
+  // 艾希加点快捷预设
+  $('chip-2e2r')?.addEventListener('click', () => {
+    rankA = 2;
+    rankB = 2;
+    renderHeroUI();
+    update();
+  });
+  $('chip-4e3r')?.addEventListener('click', () => {
+    rankA = 4;
+    rankB = 3;
+    renderHeroUI();
+    update();
+  });
+
+  // 侧边抽屉逻辑
+  function openDrawer() {
+    const backdrop = $('drawer-backdrop');
+    const panel = $('drawer-panel');
+    if (!panel) return;
+    backdrop.hidden = false;
+    panel.hidden = false;
+    requestAnimationFrame(() => panel.classList.add('open'));
+  }
+  function closeDrawer() {
+    const backdrop = $('drawer-backdrop');
+    const panel = $('drawer-panel');
+    if (!panel) return;
+    panel.classList.remove('open');
+    setTimeout(() => {
+      panel.hidden = true;
+      backdrop.hidden = true;
+    }, 280);
+  }
+  $('btn-open-drawer')?.addEventListener('click', openDrawer);
+  $('btn-close-drawer')?.addEventListener('click', closeDrawer);
+  $('btn-collapse-drawer-bottom')?.addEventListener('click', closeDrawer);
+  $('drawer-backdrop')?.addEventListener('click', closeDrawer);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('drawer-panel')?.hidden) closeDrawer();
+  });
+
+  // 海克斯强化单卡折叠与展开
+  document.querySelectorAll('.btn-toggle-fold').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const targetId = btn.dataset.target;
+      const target = $(targetId);
+      if (target) {
+        target.classList.toggle('collapsed');
+      }
+    });
+  });
+
+  // 一键折叠全部海克斯卡片
+  $('btn-toggle-all-augments')?.addEventListener('click', () => {
+    isAllAugmentsCollapsed = !isAllAugmentsCollapsed;
+    document.querySelectorAll('.aug-box').forEach((box) => {
+      box.classList.toggle('collapsed', isAllAugmentsCollapsed);
+    });
+    const btn = $('btn-toggle-all-augments');
+    if (btn) btn.textContent = isAllAugmentsCollapsed ? '一键展开' : '一键折叠';
+  });
+
+  // 收起/展开海克斯区整块
+  $('btn-fold-sec-augments')?.addEventListener('click', () => {
+    const sec = $('section-augments');
+    if (sec) {
+      sec.classList.toggle('section-collapsed');
+      const btn = $('btn-fold-sec-augments');
+      if (btn) btn.textContent = sec.classList.contains('section-collapsed') ? '展开' : '收起';
+    }
+  });
+
+  // 一键折叠全部装备卡片
+  $('btn-toggle-all-items')?.addEventListener('click', () => {
+    isAllItemsCollapsed = !isAllItemsCollapsed;
+    if (isAllItemsCollapsed) {
+      Object.keys(ITEMS).forEach((id) => collapsedItemIds.add(id));
+    } else {
+      collapsedItemIds.clear();
+    }
+    const btn = $('btn-toggle-all-items');
+    if (btn) btn.textContent = isAllItemsCollapsed ? '一键展开卡片' : '一键折叠卡片';
+    renderItemsPicker();
+  });
+
+  // 收起/展开装备区整块
+  $('btn-fold-sec-equipment')?.addEventListener('click', () => {
+    const sec = $('section-equipment');
+    if (sec) {
+      sec.classList.toggle('section-collapsed');
+      const btn = $('btn-fold-sec-equipment');
+      if (btn) btn.textContent = sec.classList.contains('section-collapsed') ? '展开' : '收起';
+    }
+  });
+
+  // 重置面板
+  $('btn-reset').addEventListener('click', () => {
+    heroKey = 'ashe';
+    rankA = 2;
+    rankB = 2;
+    rankUlt = 3;
+    selectedItems = ['nashor'];
+    activeItemCategory = 'all';
+    $('chk-purist').checked = true;
+    $('chk-eureka').checked = false;
+    $('chk-shrink').checked = false;
+    $('chk-recursion').checked = false;
+    $('chk-archmage').checked = true;
+    if ($('chk-adapt')) $('chk-adapt').checked = false;
+    if ($('chk-crown')) $('chk-crown').checked = false;
+    if ($('chk-lich-spellblade')) $('chk-lich-spellblade').checked = false;
+    if ($('num-extra-as')) $('num-extra-as').value = '0';
+    if ($('num-extra-ap')) $('num-extra-ap').value = '0';
+    if ($('num-extra-ad')) $('num-extra-ad').value = '0';
+    $('num-shrink-stacks').value = '0';
+    $('num-recursion-kills').value = '0';
+    if ($('num-crown-stacks')) $('num-crown-stacks').value = '0';
+    if ($('num-torch-stacks')) $('num-torch-stacks').value = '3';
+
+    document.querySelectorAll('.item-tab').forEach((t) => {
+      t.classList.toggle('active', t.dataset.cat === 'all');
+    });
+
+    renderHeroUI();
+    renderInventorySlots();
+    renderItemsPicker();
+    update();
+  });
 }
 
-$('config-form').addEventListener('submit', (event) => event.preventDefault());
-$('config-form').addEventListener('input', (event) => {
-  const id = event.target.id;
-  if (id === 'haste-range') $('haste').value = event.target.value;
-  if (id === 'archmage-enabled' || id === 'sorcerer-enabled') $(id.replace('-enabled', '')).disabled = !event.target.checked;
-  if (/^(key|rank)-[AB]$/.test(id) && mode === 'ashe') {
-    captureSkills();
-    const side = id.slice(-1);
-    const key = $(`key-${side}`).value;
-    const data = HEROES.ashe.skills[key];
-    const rank = Math.max(1, Math.min(data.baseCooldowns.length, Number(skills[side].rank)));
-    skills[side] = { ...skills[side], key, rank, name: data.name, base: data.baseCooldowns[rank - 1] };
-    if (id.startsWith('key-')) renderSkillFields();
-    else { $(`base-${side}`).value = String(data.baseCooldowns[rank - 1]); }
-  }
-  update();
-});
-document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
-$('apply-min').addEventListener('click', () => {
-  if (!currentResult || !Number.isFinite(currentResult.minHaste)) return;
-  $('haste').value = String(currentResult.minHaste);
-  update();
-});
-$('leveling').addEventListener('click', (event) => {
-  const button = event.target.closest('[data-preset]');
-  if (!button) return;
-  const [eRank, rRank] = button.dataset.preset.split(',').map(Number);
-  applyPreset(eRank, rRank);
-});
-$('reset').addEventListener('click', () => {
-  mode = 'ashe';
-  skills = defaultSkills();
-  delete savedModes.ashe;
-  delete savedModes.custom;
-  $('haste').value = '150';
-  $('hero-name').value = '自定义英雄';
-  renderAugments();
-  renderSkillFields();
-  updateModePresentation();
-  update();
-});
-
-renderAugments();
-renderSkillFields();
-updateModePresentation();
+renderHeroUI();
+renderInventorySlots();
+renderItemsPicker();
+initEvents();
 update();

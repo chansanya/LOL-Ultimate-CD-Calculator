@@ -14,7 +14,7 @@ describe('单文件 Worker 交付', () => {
     assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
     const html = await response.text();
     assert.match(html, /<html lang="zh-CN">/);
-    assert.match(html, /极寒回响/);
+    assert.match(html, /居家办公计算器/);
     assert.match(html, /理论达标 ≠ 实际无限释放/);
     assert.match(html, /游戏版本未核验/);
     assert.match(html, /5 秒施放间隔/);

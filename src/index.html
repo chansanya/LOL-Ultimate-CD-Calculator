@@ -3,112 +3,542 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#080f18">
-  <meta name="description" content="寒冰射手 ER 互刷与自定义双技能理论计算器。实时计算最低成型急速、双向冷却返还及技能加点推荐。">
-  <title>极寒回响 · LOL 大招流计算器</title>
+  <meta name="theme-color" content="#060b13">
+  <meta name="description" content="居家办公计算器 · LOL 终极技能与冷却互刷全息战术计算器。支持海克斯区、装备区、攻速法强转化、寒冰 ER 互刷、死歌/船长大招极限压缩。">
+  <title>居家办公计算器</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230b1522'/%3E%3Cpath d='M24 7v34M9 15l30 18M9 33l30-18M17 11l7 7 7-7M17 37l7-7 7 7' fill='none' stroke='%237dddf2' stroke-width='2'/%3E%3C/svg%3E">
   <style>/* APP_STYLES */</style>
 </head>
 <body>
   <a class="skip-link" href="#simulator">跳转至计算器</a>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="#" aria-label="极寒回响首页"><span class="brand-symbol" data-icon="snowflake"></span><span>极寒回响<small>LOL 大招流计算器</small></span></a>
-      <nav aria-label="主导航">
-        <a class="nav-active" href="#simulator">交互模拟器</a>
-        <a href="#leveling">加点对照</a>
-        <a href="#mechanics">计算原理<span data-icon="arrow-up-right"></span></a>
+
+  <div class="deck-wrapper" id="simulator">
+    <!-- 顶部宽幅全局指挥栏 -->
+    <header class="deck-header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-hex-icon"><span data-icon="snowflake"></span></div>
+          <div class="brand-info">
+            <h1 class="brand-title">居家办公计算器</h1>
+            <p class="brand-sub">LOL 海克斯大乱斗 · 终极技能与冷却互刷全息指挥舱</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 英雄模式大号标签切换组 -->
+      <nav class="hero-nav-tabs" role="tablist" aria-label="英雄作战模式">
+        <button type="button" role="tab" class="hero-tab active" data-hero="ashe" id="tab-ashe" aria-selected="true">
+          <img class="hero-avatar" src="https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/Ashe.png" alt="寒冰" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+          <span class="tab-icon" style="display:none">❄️</span>
+          <span class="hero-tab-name">寒冰射手 · 艾希</span>
+        </button>
+        <button type="button" role="tab" class="hero-tab" data-hero="karthus" id="tab-karthus" aria-selected="false">
+          <img class="hero-avatar" src="https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/Karthus.png" alt="死歌" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+          <span class="tab-icon" style="display:none">💀</span>
+          <span class="hero-tab-name">死亡颂唱者 · 死歌</span>
+        </button>
+        <button type="button" role="tab" class="hero-tab" data-hero="gangplank" id="tab-gangplank" aria-selected="false">
+          <img class="hero-avatar" src="https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/Gangplank.png" alt="船长" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+          <span class="tab-icon" style="display:none">💣</span>
+          <span class="hero-tab-name">海洋之灾 · 船长</span>
+        </button>
       </nav>
-      <a class="github-link" href="https://github.com/chansanya/LOL-Ultimate-CD-Calculator" target="_blank" rel="noopener noreferrer" aria-label="查看 GitHub 源码"><span data-icon="github"></span><span>GitHub</span></a>
-    </div>
-  </header>
 
-  <main class="page-shell">
-    <section class="hero" aria-labelledby="page-title">
-      <div class="hero-copy">
-        <div class="hero-tag"><span class="small-diamond"></span>为你的下一支水晶箭，找到最优解</div>
-        <h1 id="page-title">打破冷却的边界<span>。</span></h1>
-        <p>探索大法师与术士的冷却协同。调整急速，推演互刷，<br class="desktop-break">让每一次技能加点都有据可循。</p>
-        <div class="hero-meta"><span><span data-icon="flask-conical"></span>静态理论模型</span><span class="meta-divider"></span><span>寒冰 ER · 自定义双技能</span></div>
+      <div class="header-right">
+        <button type="button" id="btn-reset" class="btn-deck-reset" title="恢复默认作战配置">
+          <span data-icon="rotate-ccw"></span><span>重置面板</span>
+        </button>
       </div>
-      <div class="frost-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-grid"></div><div class="frost-emblem"><span data-icon="bow-arrow"></span></div><div class="art-coordinate">弗雷尔卓德 / 冰霜之力</div><span class="ice-spark spark-one"></span><span class="ice-spark spark-two"></span><span class="ice-spark spark-three"></span></div>
-      <div class="hero-bottom-line"></div>
-    </section>
+    </header>
 
-    <section id="simulator" class="simulator" aria-label="实时交互模拟器">
-      <aside class="configuration panel">
-        <div class="panel-heading"><h2><span data-icon="sliders-horizontal"></span>构筑配置</h2><button type="button" id="reset" class="text-button" title="恢复默认配置"><span data-icon="rotate-ccw"></span>重置</button></div>
-        <form id="config-form" novalidate>
-          <div class="control-section first-section">
-            <div class="section-label">选择英雄</div>
-            <div class="segmented" role="group" aria-label="英雄模式"><button type="button" class="selected" data-mode="ashe" aria-pressed="true"><span data-icon="snowflake"></span>寒冰射手</button><button type="button" data-mode="custom" aria-pressed="false"><span data-icon="pencil-ruler"></span>自定义英雄</button></div>
-            <div id="custom-hero-field" class="custom-hero-field" hidden><label for="hero-name">英雄名称</label><input type="text" id="hero-name" value="自定义英雄" maxlength="32"></div>
-            <div class="preset-note" id="hero-note"><span class="dot"></span>艾希 · 鹰击长空 / 魔法水晶箭</div>
-            <div class="skills-grid" id="skills-fields"></div>
-            <p class="field-note" id="skill-note">E 为充能恢复时间，最多 2 层；5 秒施放间隔未计入模型。Q 依赖普攻层数，不纳入普通 CD 互刷。</p>
-          </div>
-          <div class="control-section">
-            <div class="haste-heading"><label for="haste">通用技能急速</label><div class="haste-number"><input id="haste" type="number" min="0" step="any" value="150" inputmode="decimal" aria-describedby="haste-help"><span>AH</span></div></div>
-            <input id="haste-range" class="haste-range" type="range" min="0" max="500" step="1" value="150" aria-label="通用技能急速滑块">
-            <div class="range-scale"><span>0</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500</span></div>
-            <p class="field-note" id="haste-help">数字输入支持超过 500 急速。</p>
-          </div>
-          <div class="control-section augments-section">
-            <div class="section-label">海克斯强化<span class="section-subtitle">比例可调</span></div>
-            <div id="augment-fields"></div>
-          </div>
-          <p id="form-error" class="form-error" role="alert" hidden></p>
-        </form>
-        <div class="config-footer"><span data-icon="shield-check"></span>本地实时计算，无需上传任何数据</div>
-      </aside>
+    <!-- 宽幅两列战术工作区 -->
+    <main class="deck-grid">
 
-      <div class="results-column">
-        <section class="panel result-panel" aria-label="计算结果">
-          <div class="panel-heading"><h2><span data-icon="activity"></span>实时推演</h2><span class="live-indicator"><span></span>随配置更新</span></div>
-          <div id="invalid-result" class="invalid-result" hidden><span data-icon="circle-alert"></span><h3>请检查构筑参数</h3><p id="result-error">修正左侧输入后，计算结果会自动更新。</p></div>
-          <div id="result-content">
-            <div class="result-summary">
-              <div class="threshold-block"><div class="metric-label">理论互刷最低通用急速</div><div class="threshold-number"><strong id="min-haste">150</strong><span id="threshold-unit">AH</span></div><div id="threshold-gap" class="threshold-gap">当前急速已达到理论阈值</div></div>
-              <div class="verdict-block"><span id="loop-status" class="status-pill success"><span data-icon="circle-check"></span>理论条件已达成</span><p>一次对向释放后，<br>两技能剩余冷却均归零。</p><button type="button" id="apply-min" class="primary-button"><span data-icon="crosshair"></span>应用最低急速</button></div>
+      <!-- 左列：分为海克斯区 + 装备区 -->
+      <div class="deck-column deck-controls-col">
+
+        <!-- ======================= 1. 海克斯强化区 ======================= -->
+        <section class="deck-card deck-card-hextech" id="section-augments">
+          <div class="card-caption">
+            <div class="caption-title">
+              <span class="sector-tag tag-cyan">海克斯区</span>
+              <span data-icon="sparkles"></span>海克斯大乱斗强化矩阵
             </div>
-            <div id="skill-metrics" class="skill-metrics"></div>
-            <div class="model-notice"><span data-icon="info"></span><p><strong>理论达标 ≠ 实际无限释放。</strong>该结果不模拟充能、施法耗时、最短施放间隔或游戏内返还目标。</p></div>
+            <div class="caption-actions">
+              <span class="bonus-glow-tag" id="lbl-aug-bonus">+0 强化急速注入</span>
+              <button type="button" class="btn-batch-fold" id="btn-toggle-all-augments" title="折叠或展开全部海克斯卡片">一键折叠</button>
+              <button type="button" class="btn-section-fold" id="btn-fold-sec-augments" title="收起或展开海克斯区">收起</button>
+            </div>
+          </div>
+
+          <div class="augments-deck-grid">
+            <!-- 纯粹主义者 - 术师 -->
+            <div class="aug-box" id="box-purist">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-purist">
+                  <input type="checkbox" id="chk-purist" class="hex-checkbox" checked>
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/kiwi/augments/icons/puristcaster_large.png" alt="术师" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">🧙</span>纯粹主义者 - 术师
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-green">+10% 加算CDR</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-purist" aria-label="折叠或展开纯粹主义者" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">攻速按 0.65 转化为急速 · 装备与海斗锻体攻速综合换算</span>
+                <div class="aug-summary-tag text-emerald" id="tag-purist-bonus">装备与锻体攻速提供: +0.0 AH</div>
+                <div class="aug-input-chip">
+                  <label for="num-extra-as">海斗锻体额外攻速</label>
+                  <input type="number" id="num-extra-as" min="0" max="500" step="5" value="0" placeholder="0">
+                  <span>%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 尤里卡 -->
+            <div class="aug-box" id="box-eureka">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-eureka">
+                  <input type="checkbox" id="chk-eureka" class="hex-checkbox">
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/cherry/augments/icons/eureka_large.png" alt="尤里卡" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">💡</span>尤里卡
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-cyan">AP × 30% AH</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-eureka" aria-label="折叠或展开尤里卡" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">法强按 30% 转化为急速 · 锻体法强受帽子火炬符文百分比增强</span>
+                <div class="aug-summary-tag text-cyan" id="tag-eureka-bonus">装备与锻体法强提供: +0.0 AH</div>
+                <div class="aug-input-chip">
+                  <label for="num-extra-ap">海斗锻体额外法强</label>
+                  <input type="number" id="num-extra-ap" min="0" max="2500" step="10" value="0" placeholder="0">
+                  <span>AP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 缩小引擎 -->
+            <div class="aug-box" id="box-shrink">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-shrink">
+                  <input type="checkbox" id="chk-shrink" class="hex-checkbox">
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/kiwi/augments/icons/shrinkengine_large.png" alt="缩小引擎" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">🔬</span>缩小引擎
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-cyan">每层 +10 AH</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-shrink" aria-label="折叠或展开缩小引擎" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">击杀层数 · 每层体型缩小 4%</span>
+                <div class="aug-summary-tag" id="tag-shrink-bonus">当前层数提供: +0 AH</div>
+                <div class="aug-input-chip">
+                  <label for="num-shrink-stacks">击杀层数</label>
+                  <input type="number" id="num-shrink-stacks" min="0" max="50" step="1" value="0" placeholder="0">
+                  <span>层</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 无限循环往复 -->
+            <div class="aug-box" id="box-recursion">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-recursion">
+                  <input type="checkbox" id="chk-recursion" class="hex-checkbox">
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/kiwi/augments/icons/infiniterecursion_large.png" alt="无限循环往复" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">🌀</span>无限循环往复
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-cyan">基准+60 | 击杀+3</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-recursion" aria-label="折叠或展开无限循环往复" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">击杀成长 · 每次击杀提供 3 急速</span>
+                <div class="aug-summary-tag" id="tag-recursion-bonus">当前提供: +0 AH</div>
+                <div class="aug-input-chip">
+                  <label for="num-recursion-kills">击杀次数</label>
+                  <input type="number" id="num-recursion-kills" min="0" max="50" step="1" value="0" placeholder="0">
+                  <span>头</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 物理转魔法 -->
+            <div class="aug-box" id="box-adapt">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-adapt">
+                  <input type="checkbox" id="chk-adapt" class="hex-checkbox">
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/cherry/augments/icons/adapt_large.png" alt="物转法" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">⚔️</span>物理转魔法
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-cyan">AD➔AP + 15%</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-adapt" aria-label="折叠或展开物理转魔法" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">攻击力 100% 转为法强 · 额外提升 15% 法强</span>
+                <div class="aug-summary-tag text-blue" id="tag-adapt-bonus">装备与锻体攻击力提供: +0 AP</div>
+                <div class="aug-input-chip">
+                  <label for="num-extra-ad">海斗锻体额外攻击力</label>
+                  <input type="number" id="num-extra-ad" min="0" max="1000" step="10" value="0" placeholder="0">
+                  <span>AD</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 王冠之重 -->
+            <div class="aug-box" id="box-crown">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-crown">
+                  <input type="checkbox" id="chk-crown" class="hex-checkbox">
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/kiwi/augments/icons/heavyisthecrown_large.png" alt="王冠之重" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">👑</span>王冠之重
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-gold">每层 +5% 额外3属性</span>
+                  <button type="button" class="btn-toggle-fold" data-target="box-crown" aria-label="折叠或展开王冠之重" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">击杀叠加【背负】· 每层提升 5% 额外攻击力、法术强度与总攻速</span>
+                <div class="aug-summary-tag text-gold" id="tag-crown-bonus">未启用 · 每层击杀参与 +5% 额外3属性</div>
+                <div class="aug-input-chip">
+                  <label for="num-crown-stacks">【背负】击杀层数</label>
+                  <input type="number" id="num-crown-stacks" min="0" max="100" step="1" value="0" placeholder="0">
+                  <span>层</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 大法师 -->
+            <div class="aug-box" id="archmage-bar">
+              <div class="aug-box-header">
+                <label class="aug-check-label" for="chk-archmage">
+                  <input type="checkbox" id="chk-archmage" class="hex-checkbox" checked>
+                  <span class="aug-box-name">
+                    <img class="aug-icon-img" src="https://raw.communitydragon.org/latest/game/assets/ux/kiwi/augments/icons/arcaneaxiom_large.png" alt="大法师" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+                    <span class="aug-fallback-icon" style="display:none">✨</span>大法师 · 双技能互刷核心
+                  </span>
+                </label>
+                <div class="aug-box-actions">
+                  <span class="aug-pill-badge tag-cyan">30% 基础返还</span>
+                  <button type="button" class="btn-toggle-fold" data-target="archmage-bar" aria-label="折叠或展开大法师" title="折叠或展开">▾</button>
+                </div>
+              </div>
+              <div class="aug-box-body">
+                <span class="aug-desc-text">释放任一技能，按其基础 CD 的 30% 返还给另一技能</span>
+                <div class="aug-summary-tag text-cyan" id="tag-archmage-bonus">双技能互刷核心 · 释放基础 30% 对向扣减</div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section class="panel cooldown-panel" aria-labelledby="cooldown-title">
-          <div class="panel-heading"><h2 id="cooldown-title"><span data-icon="chart-no-axes-combined"></span>冷却分解</h2><div class="legend"><span><i class="legend-cdr"></i>冷却缩减</span><span><i class="legend-refund"></i>有效返还</span><span><i class="legend-remain"></i>剩余冷却</span></div></div>
-          <div id="cooldown-bars" class="cooldown-bars"></div>
-          <div class="flow-caption">大法师 · 基于释放技能的基础 CD 双向返还</div>
-          <div id="refund-flow" class="refund-flow"></div>
+        <!-- ======================= 2. 装备装配区 ======================= -->
+        <section class="deck-card deck-card-equipment" id="section-equipment">
+          <div class="card-caption">
+            <div class="caption-title">
+              <span class="sector-tag tag-gold">装备区</span>
+              <span data-icon="shield"></span>英雄战术装备库
+            </div>
+            <div class="caption-actions">
+              <button type="button" class="btn-batch-fold" id="btn-toggle-all-items" title="折叠或展开全部装备卡片">一键折叠卡片</button>
+              <button type="button" id="btn-clear-items" class="btn-text-action" title="清空全部已选装备">清空装备</button>
+              <button type="button" class="btn-section-fold" id="btn-fold-sec-equipment" title="收起或展开装备区">收起</button>
+            </div>
+          </div>
+
+          <!-- 6 格已装备栏展示 -->
+          <div class="inventory-slots-container">
+            <div class="inventory-header">
+              <span class="inv-title">🎒 作战装备栏 · 最多 6 件含鞋子 · 点击格位卸下</span>
+              <span class="inv-count font-mono" id="disp-item-count">已选 0 / 6 件含鞋子</span>
+            </div>
+            <div class="inventory-slots-grid" id="inventory-slots">
+              <!-- JS 动态注入 6 个装备槽 -->
+            </div>
+          </div>
+
+          <!-- 装备总计属性指示条 -->
+          <div class="items-summary-bar">
+            <div class="sum-chip">
+              <span class="sum-label">装备常规急速</span>
+              <strong class="sum-val font-mono text-cyan" id="sum-item-ah">+0 AH</strong>
+            </div>
+            <div class="sum-chip">
+              <span class="sum-label">装备提供攻速</span>
+              <strong class="sum-val font-mono text-emerald" id="sum-item-as">+0% AS</strong>
+            </div>
+            <div class="sum-chip">
+              <span class="sum-label">装备提供法强</span>
+              <strong class="sum-val font-mono text-blue" id="sum-item-ap">+0 AP</strong>
+            </div>
+            <div class="sum-chip" id="sum-ult-chip">
+              <span class="sum-label">大招专属急速 · 加算生效</span>
+              <strong class="sum-val font-mono text-purple" id="sum-item-ult-ah">+0 AH</strong>
+            </div>
+          </div>
+
+          <!-- 巫妖之祸咒刃触发爆发开关 -->
+          <div class="lich-spellblade-banner" id="lich-spellblade-box" hidden>
+            <label class="aug-check-label" for="chk-lich-spellblade">
+              <input type="checkbox" id="chk-lich-spellblade" class="hex-checkbox">
+              <div>
+                <span class="banner-title text-gold">⚡ 巫妖之祸 · 咒刃施法攻速爆发 +50% AS</span>
+                <span class="banner-sub">施放技能后触发咒刃被动额外爆发 50% 攻速，术师机制下瞬时转化 +32.5 技能急速！</span>
+              </div>
+            </label>
+            <span class="aug-pill-badge tag-gold">+32.5 爆发急速</span>
+          </div>
+
+          <!-- 黯炎火炬邪焰灼烧层数调节 -->
+          <div class="torch-stacks-banner" id="torch-stacks-box" hidden>
+            <div class="torch-banner-content">
+              <div>
+                <span class="banner-title text-orange">🔥 黯炎火炬 · 邪焰灼烧英雄数量</span>
+                <span class="banner-sub">每个被灼烧的敌方英雄提供 4% 法强加成 · 极速流 AP 核心</span>
+              </div>
+              <div class="torch-stepper">
+                <label for="num-torch-stacks">命中人数</label>
+                <input type="number" id="num-torch-stacks" min="0" max="5" step="1" value="3">
+                <span class="torch-bonus-pill" id="disp-torch-ap-bonus">+12% 法强</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 装备库分类选项卡 -->
+          <div class="item-cat-tabs" id="item-category-tabs">
+            <button type="button" class="item-tab active" data-cat="all">全部装备</button>
+            <button type="button" class="item-tab" data-cat="ap">🔮 法术 / 急速</button>
+            <button type="button" class="item-tab" data-cat="as">⚡ 攻速 / 联动</button>
+            <button type="button" class="item-tab" data-cat="ad">🏹 物理 / 大招</button>
+            <button type="button" class="item-tab" data-cat="boots">👟 鞋子系列</button>
+          </div>
+
+          <!-- 可选装备卡片库网格 -->
+          <div class="items-picker-grid" id="items-picker-grid">
+            <!-- JS 动态渲染装备卡片 -->
+          </div>
         </section>
-      </div>
-    </section>
 
-    <section id="leveling" class="leveling-section" aria-labelledby="leveling-title">
-      <div class="section-heading"><div><div class="eyebrow">把急速花在刀刃上</div><h2 id="leveling-title">同步加点，找到冷却平衡</h2><p>基础冷却越接近，互刷所需的通用急速越低。</p></div><span class="subtle-label"><span data-icon="git-compare-arrows"></span>寒冰 ER · 15 组组合</span></div>
-      <div class="recommendations" id="recommendations"></div>
-      <div class="panel table-panel">
-        <div class="table-heading"><h3>完整加点对照</h3><span id="table-context">按当前海克斯与独立急速实时计算</span></div>
-        <div class="table-scroll" tabindex="0" role="region" aria-label="寒冰加点对照表，可横向滚动"><table><caption class="sr-only">寒冰 E 的 5 个等级与 R 的 3 个等级的理论最低急速对照</caption><thead><tr><th scope="col">E 等级</th><th scope="col">R 等级</th><th scope="col">E 基础 CD</th><th scope="col">R 基础 CD</th><th scope="col">无术士</th><th scope="col">有术士</th><th scope="col">当前配置阈值</th><th scope="col">加点操作</th></tr></thead><tbody id="level-table"></tbody></table></div>
-        <p class="table-footnote"><span data-icon="info"></span>“无术士 / 有术士”固定使用文档验收参数：M = 30%、独立急速 = 0、S = 0% / 10%。当前配置列使用左侧参数；应用加点会恢复寒冰 ER 基础 CD。</p>
       </div>
-      <p class="level-warning"><span data-icon="triangle-alert"></span>同步加点过程中可能暂时失去理论互刷条件；请在升级 E 或 R 后重新检查阈值。</p>
-    </section>
 
-    <section id="mechanics" class="mechanics-section" aria-labelledby="mechanics-title">
-      <div class="section-heading"><div><div class="eyebrow">每一个数值，都有依据</div><h2 id="mechanics-title">理解互刷背后的公式</h2></div><span class="version-badge">模型 v1.0 · 游戏版本未核验</span></div>
-      <div class="mechanics-grid">
-        <article class="panel formula-card"><span class="formula-icon" data-icon="gauge"></span><h3>急速与术士加算</h3><div class="formula">Cᵢ = clamp((H + Xᵢ) / (100 + H + Xᵢ) + S, 0, 1)</div><p>先将通用与独立技能急速换算成冷却缩减，再加上术士比例 S。术士关闭时 S = 0。</p><div class="formula secondary-formula">Tᵢ = Bᵢ × (1 − Cᵢ)</div></article>
-        <article class="panel formula-card"><span class="formula-icon gold" data-icon="repeat-2"></span><h3>基础 CD 返还</h3><div class="formula">Fₐ = Bᵦ × M　 /　Fᵦ = Bₐ × M</div><p>大法师按释放技能的基础 CD 返还给另一技能。返还量不随释放技能的实际冷却变化。</p><div class="formula secondary-formula">Lᵢ = max(0, Tᵢ − Fᵢ)</div></article>
-        <article class="panel formula-card"><span class="formula-icon" data-icon="crosshair"></span><h3>最低成型急速</h3><div class="formula">qᵢ = 1 − Fᵢ / Bᵢ − S</div><p>qᵢ ≤ 0 时需求为 0；qᵢ ≥ 1 时无有限解；其余为 max(0, 100qᵢ / (1 − qᵢ) − Xᵢ)。</p><div class="formula secondary-formula">H最低 = ceil(max(needₐ, needᵦ))</div></article>
+      <!-- 右列：技能等级配置 + 战术遥测推演 + 全息急速分解 -->
+      <div class="deck-column deck-telemetry-col">
+
+        <!-- 1. 技能基础 CD 与等级配置 -->
+        <section class="deck-card">
+          <div class="card-caption">
+            <div class="caption-title" id="skills-section-label"><span data-icon="sliders-horizontal"></span>技能基础 CD 与等级配置</div>
+            <!-- 寒冰专属加点快捷 chips -->
+            <div class="preset-chips" id="preset-chips">
+              <button type="button" class="preset-chip active" id="chip-2e2r">★ 2E + 2R 最佳起步</button>
+              <button type="button" class="preset-chip" id="chip-4e3r">4E + 3R 满级形态</button>
+            </div>
+          </div>
+
+          <!-- 寒冰双技能等级网格 -->
+          <div class="skills-rank-dual-grid" id="ashe-skills-grid">
+            <div class="rank-tile">
+              <div class="tile-header">
+                <span class="tile-skill-name">E 鹰击长空</span>
+                <span class="tile-base-cd">基础 CD: <strong id="disp-skill-a-cd">80</strong>s</span>
+              </div>
+              <div class="pills-flex" id="ranks-skill-a"></div>
+            </div>
+
+            <div class="rank-tile">
+              <div class="tile-header">
+                <span class="tile-skill-name">R 魔法水晶箭</span>
+                <span class="tile-base-cd">基础 CD: <strong id="disp-skill-b-cd">80</strong>s</span>
+              </div>
+              <div class="pills-flex" id="ranks-skill-b"></div>
+            </div>
+          </div>
+
+          <!-- 死歌 / 船长专属：大招 R 专属聚焦面板 -->
+          <div class="ult-focus-wrapper" id="ult-focus-grid" hidden>
+            <div class="ult-hero-deck-card">
+              <div class="ult-deck-top">
+                <div>
+                  <span class="ult-badge-pill" id="ult-hero-tag">死歌 · 大招流</span>
+                  <h3 class="ult-big-title" id="disp-ult-name">R 安魂曲</h3>
+                </div>
+                <div class="ult-base-stat">
+                  <span class="stat-muted">当前基础冷却: </span>
+                  <strong id="disp-ult-base-cd" class="stat-highlight">160</strong><span class="unit-s">s</span>
+                </div>
+              </div>
+              <div class="ult-level-selector">
+                <span class="level-select-label">大招等级：</span>
+                <div class="pills-flex flex-1" id="ranks-ult-only"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-tip-footer" id="hero-tip-note">艾希 2E + 2R 基础 CD 皆为 80s · 150 急速达成互刷</div>
+        </section>
+
+        <!-- 2. 战术推演核心控制台 -->
+        <section class="deck-card verdict-telemetry-card" id="card-verdict">
+          <div class="verdict-banner">
+            <div id="status-badge" class="verdict-status-pill success">
+              <span class="status-radar-dot"></span>
+              <span id="status-text">已达成理论无限互刷！</span>
+            </div>
+            <button type="button" id="btn-open-drawer" class="btn-deck-detail" aria-label="查看实时急速池与战术拆解详情">
+              <span>查看详情</span>
+              <span class="arrow-icon">➔</span>
+            </button>
+          </div>
+
+          <!-- 3 个全息大数仪表块 -->
+          <div class="telemetry-metrics-bar">
+            <!-- 仪表块 1 -->
+            <div class="telemetry-block" id="metric-block-1">
+              <div class="block-label" id="label-stat-1">理论互刷最低急速</div>
+              <div class="block-number text-cyan" id="val-stat-1">150<span class="number-unit">AH</span></div>
+              <div class="block-sub text-emerald" id="sub-stat-1">当前急速已达标</div>
+            </div>
+            <!-- 仪表块 2 -->
+            <div class="telemetry-block block-hero-highlight" id="metric-block-2">
+              <div class="block-label" id="label-stat-2">E 鹰击长空 互刷剩余</div>
+              <div class="block-number" id="val-stat-2">0.0<span class="number-unit">s</span></div>
+              <div class="block-sub text-muted" id="sub-stat-2">实际 24.0s · 返还 24s</div>
+            </div>
+            <!-- 仪表块 3 -->
+            <div class="telemetry-block" id="metric-block-3">
+              <div class="block-label" id="label-stat-3">R 水晶箭 互刷剩余</div>
+              <div class="block-number" id="val-stat-3">0.0<span class="number-unit">s</span></div>
+              <div class="block-sub text-muted" id="sub-stat-3">实际 24.0s · 返还 24s</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 终极大招全息伤害推演 -->
+        <section class="deck-card ultimate-damage-card" id="card-damage">
+          <div class="card-caption">
+            <div class="caption-title"><span data-icon="sparkles"></span>终极大招全息伤害推演</div>
+            <span class="stat-badge-cyan" id="disp-total-ap-badge">法术强度: 0 AP</span>
+          </div>
+          <div class="damage-display-body">
+            <div class="damage-metric-main">
+              <span class="damage-metric-label" id="disp-dmg-hero-skill">R 魔法水晶箭 · 单次爆发</span>
+              <div class="damage-metric-val font-mono text-cyan" id="disp-dmg-total">0<span class="number-unit">点魔法伤害</span></div>
+              <div class="damage-metric-sub text-muted" id="disp-dmg-summary">基础 400 + AP 加成 0</div>
+            </div>
+            <div class="damage-breakdown-chips" id="disp-dmg-chips">
+              <span class="dmg-chip" id="chip-dmg-base">基础伤害: 400</span>
+              <span class="dmg-chip" id="chip-dmg-ratio">法强加成: +0</span>
+              <span class="dmg-chip text-gold" id="chip-dmg-mult">法强放大: 1.00x</span>
+            </div>
+            <div class="damage-disclaimer-note" id="disp-dmg-disclaimer">
+              <span class="note-radar-dot"></span>
+              <span>表面伤害模拟计算可能有误差，以实际对局为准</span>
+            </div>
+          </div>
+        </section>
+
       </div>
-      <details class="panel model-details"><summary><span data-icon="book-open"></span>数据来源与模型边界<span class="details-chevron" data-icon="chevron-down"></span></summary><div class="details-content"><p>英雄数据和海克斯比例来自项目需求文档与用户提供的游戏截图，未独立核验游戏版本。术士使用加算冷却缩减，大法师使用基础 CD 返还模型；二者均为本工具的理论假设。</p><p>寒冰 Q 基础 CD 为 0，依赖普攻叠满 4 层，不能纳入该模型；W 基础 CD 为 18 / 14.5 / 11 / 7.5 / 4 秒；E 为 90 / 80 / 70 / 60 / 50 秒，最多 2 层充能且有 5 秒施放间隔；R 为 100 / 80 / 60 秒。</p><p>E 的充能如何恢复、最短施放间隔、Q/W 是否抢占返还、实际返还目标、施法耗时和游戏版本都需要游戏内实测。静态双技能条件不能据此推断实际无限释放。</p><p>显示结果保留两位小数，计算过程不提前舍入。理论判定沿用参考引擎的 1e−8 浮点容差，最低急速向上取整前使用 1e−9 容差。海克斯关闭时对应比例为 0。</p></div></details>
-    </section>
-  </main>
-  <footer class="site-footer"><a class="footer-brand" href="#"><span data-icon="snowflake"></span>极寒回响</a><p>以计算探索构筑，以实战验证可能。</p><span>非官方玩家工具 · 与 Riot Games 无关联</span></footer>
+
+    </main>
+
+    <!-- 底部极简说明与模型边界 保留测试与实战提示文本 -->
+    <footer class="deck-footer">
+      <div class="footer-legal">
+        <p><strong>理论达标 ≠ 实际无限释放。</strong>模型计算基于海克斯大乱斗机制与理论公式，游戏版本未核验；寒冰 E 含有 5 秒施放间隔及充能层数机制，实战循环请结合局内手感。</p>
+      </div>
+      <div class="footer-sign">
+        <span>居家办公计算器 · 纯本地极速计算 · 全息宽幅战术作战终端</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 侧边抽屉遮罩与抽屉面板 -->
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer-panel" id="drawer-panel" role="dialog" aria-modal="true" aria-label="实时急速池与战术拆解详情" hidden>
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <span class="drawer-icon"><span data-icon="zap"></span></span>
+        <h3 class="drawer-title">实时急速池与战术拆解</h3>
+      </div>
+      <button type="button" class="btn-drawer-close" id="btn-close-drawer" aria-label="收起详情">
+        <span>收起</span>
+        <span class="close-icon">✕</span>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-tip-box">
+        <span class="tip-title">急速与 CDR 全息换算说明</span>
+        <p class="tip-desc">根据海克斯大乱斗公式推演，常规技能急速与独立终极急速分别转化为冷却缩减，加算术师专属 CDR 判定互刷。</p>
+      </div>
+
+      <div class="drawer-meta-bar">
+        <span class="meta-label">全局冷却缩减状态</span>
+        <span class="stat-badge-cyan" id="disp-total-cdr-badge">综合 CDR: 70.0%</span>
+      </div>
+
+      <div class="breakdown-list" id="breakdown-list">
+        <div class="breakdown-row">
+          <span class="row-source"><i class="dot-indicator dot-base"></i>装备与符文基础急速</span>
+          <strong class="row-val font-mono" id="breakdown-base-val">0 AH</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="row-source"><i class="dot-indicator dot-purist"></i>纯粹术师 · 攻速按 0.65 转化</span>
+          <strong class="row-val font-mono" id="breakdown-as-val">+0.0 AH</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="row-source"><i class="dot-indicator dot-eureka"></i>尤里卡 · 法强按 30% 转化</span>
+          <strong class="row-val font-mono" id="breakdown-ap-val">+0.0 AH</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="row-source"><i class="dot-indicator dot-shrink"></i>缩小引擎 · 每层击杀 +10 AH</span>
+          <strong class="row-val font-mono" id="breakdown-shrink-val">+0.0 AH</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="row-source"><i class="dot-indicator dot-recursion"></i>无限循环往复 · 基准+60 击杀+3</span>
+          <strong class="row-val font-mono" id="breakdown-recursion-val">+0.0 AH</strong>
+        </div>
+        <div class="breakdown-row ult-breakdown-row" id="breakdown-malignance-row" hidden>
+          <span class="row-source"><i class="dot-indicator dot-malignance"></i>【残疫】专属终极技能急速</span>
+          <strong class="row-val font-mono text-purple" id="breakdown-malignance-val">+20.0 AH</strong>
+        </div>
+        <div class="breakdown-total-bar">
+          <span>当前常规技能急速 · 上限 500</span>
+          <strong class="total-haste-display text-cyan" id="breakdown-total-val">0 AH</strong>
+        </div>
+        <div class="breakdown-total-bar ult-total-bar" id="breakdown-ult-bar">
+          <span>大招等效急速 · 含专属加算</span>
+          <strong class="total-haste-display text-purple" id="breakdown-ult-val">0 AH</strong>
+        </div>
+      </div>
+
+      <div class="drawer-footer-action">
+        <button type="button" class="btn-drawer-collapse-action" id="btn-collapse-drawer-bottom">
+          <span>收起抽屉面板</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
   <div id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-  <noscript><p class="noscript">请启用 JavaScript 以使用本地实时计算器。</p></noscript>
   <script>/* APP_SCRIPT */</script>
 </body>
 </html>
