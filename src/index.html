@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080f18">
+  <meta name="description" content="寒冰射手 ER 互刷与自定义双技能理论计算器。实时计算最低成型急速、双向冷却返还及技能加点推荐。">
+  <title>极寒回响 · LOL 大招流计算器</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230b1522'/%3E%3Cpath d='M24 7v34M9 15l30 18M9 33l30-18M17 11l7 7 7-7M17 37l7-7 7 7' fill='none' stroke='%237dddf2' stroke-width='2'/%3E%3C/svg%3E">
+  <style>/* APP_STYLES */</style>
+</head>
+<body>
+  <a class="skip-link" href="#simulator">跳转至计算器</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#" aria-label="极寒回响首页"><span class="brand-symbol" data-icon="snowflake"></span><span>极寒回响<small>LOL 大招流计算器</small></span></a>
+      <nav aria-label="主导航">
+        <a class="nav-active" href="#simulator">交互模拟器</a>
+        <a href="#leveling">加点对照</a>
+        <a href="#mechanics">计算原理<span data-icon="arrow-up-right"></span></a>
+      </nav>
+      <a class="github-link" href="https://github.com/chansanya/LOL-Ultimate-CD-Calculator" target="_blank" rel="noopener noreferrer" aria-label="查看 GitHub 源码"><span data-icon="github"></span><span>GitHub</span></a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <div class="hero-tag"><span class="small-diamond"></span>为你的下一支水晶箭，找到最优解</div>
+        <h1 id="page-title">打破冷却的边界<span>。</span></h1>
+        <p>探索大法师与术士的冷却协同。调整急速，推演互刷，<br class="desktop-break">让每一次技能加点都有据可循。</p>
+        <div class="hero-meta"><span><span data-icon="flask-conical"></span>静态理论模型</span><span class="meta-divider"></span><span>寒冰 ER · 自定义双技能</span></div>
+      </div>
+      <div class="frost-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-grid"></div><div class="frost-emblem"><span data-icon="bow-arrow"></span></div><div class="art-coordinate">弗雷尔卓德 / 冰霜之力</div><span class="ice-spark spark-one"></span><span class="ice-spark spark-two"></span><span class="ice-spark spark-three"></span></div>
+      <div class="hero-bottom-line"></div>
+    </section>
+
+    <section id="simulator" class="simulator" aria-label="实时交互模拟器">
+      <aside class="configuration panel">
+        <div class="panel-heading"><h2><span data-icon="sliders-horizontal"></span>构筑配置</h2><button type="button" id="reset" class="text-button" title="恢复默认配置"><span data-icon="rotate-ccw"></span>重置</button></div>
+        <form id="config-form" novalidate>
+          <div class="control-section first-section">
+            <div class="section-label">选择英雄</div>
+            <div class="segmented" role="group" aria-label="英雄模式"><button type="button" class="selected" data-mode="ashe" aria-pressed="true"><span data-icon="snowflake"></span>寒冰射手</button><button type="button" data-mode="custom" aria-pressed="false"><span data-icon="pencil-ruler"></span>自定义英雄</button></div>
+            <div id="custom-hero-field" class="custom-hero-field" hidden><label for="hero-name">英雄名称</label><input type="text" id="hero-name" value="自定义英雄" maxlength="32"></div>
+            <div class="preset-note" id="hero-note"><span class="dot"></span>艾希 · 鹰击长空 / 魔法水晶箭</div>
+            <div class="skills-grid" id="skills-fields"></div>
+            <p class="field-note" id="skill-note">E 为充能恢复时间，最多 2 层；5 秒施放间隔未计入模型。Q 依赖普攻层数，不纳入普通 CD 互刷。</p>
+          </div>
+          <div class="control-section">
+            <div class="haste-heading"><label for="haste">通用技能急速</label><div class="haste-number"><input id="haste" type="number" min="0" step="any" value="150" inputmode="decimal" aria-describedby="haste-help"><span>AH</span></div></div>
+            <input id="haste-range" class="haste-range" type="range" min="0" max="500" step="1" value="150" aria-label="通用技能急速滑块">
+            <div class="range-scale"><span>0</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500</span></div>
+            <p class="field-note" id="haste-help">数字输入支持超过 500 急速。</p>
+          </div>
+          <div class="control-section augments-section">
+            <div class="section-label">海克斯强化<span class="section-subtitle">比例可调</span></div>
+            <div id="augment-fields"></div>
+          </div>
+          <p id="form-error" class="form-error" role="alert" hidden></p>
+        </form>
+        <div class="config-footer"><span data-icon="shield-check"></span>本地实时计算，无需上传任何数据</div>
+      </aside>
+
+      <div class="results-column">
+        <section class="panel result-panel" aria-label="计算结果">
+          <div class="panel-heading"><h2><span data-icon="activity"></span>实时推演</h2><span class="live-indicator"><span></span>随配置更新</span></div>
+          <div id="invalid-result" class="invalid-result" hidden><span data-icon="circle-alert"></span><h3>请检查构筑参数</h3><p id="result-error">修正左侧输入后，计算结果会自动更新。</p></div>
+          <div id="result-content">
+            <div class="result-summary">
+              <div class="threshold-block"><div class="metric-label">理论互刷最低通用急速</div><div class="threshold-number"><strong id="min-haste">150</strong><span id="threshold-unit">AH</span></div><div id="threshold-gap" class="threshold-gap">当前急速已达到理论阈值</div></div>
+              <div class="verdict-block"><span id="loop-status" class="status-pill success"><span data-icon="circle-check"></span>理论条件已达成</span><p>一次对向释放后，<br>两技能剩余冷却均归零。</p><button type="button" id="apply-min" class="primary-button"><span data-icon="crosshair"></span>应用最低急速</button></div>
+            </div>
+            <div id="skill-metrics" class="skill-metrics"></div>
+            <div class="model-notice"><span data-icon="info"></span><p><strong>理论达标 ≠ 实际无限释放。</strong>该结果不模拟充能、施法耗时、最短施放间隔或游戏内返还目标。</p></div>
+          </div>
+        </section>
+
+        <section class="panel cooldown-panel" aria-labelledby="cooldown-title">
+          <div class="panel-heading"><h2 id="cooldown-title"><span data-icon="chart-no-axes-combined"></span>冷却分解</h2><div class="legend"><span><i class="legend-cdr"></i>冷却缩减</span><span><i class="legend-refund"></i>有效返还</span><span><i class="legend-remain"></i>剩余冷却</span></div></div>
+          <div id="cooldown-bars" class="cooldown-bars"></div>
+          <div class="flow-caption">大法师 · 基于释放技能的基础 CD 双向返还</div>
+          <div id="refund-flow" class="refund-flow"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="leveling" class="leveling-section" aria-labelledby="leveling-title">
+      <div class="section-heading"><div><div class="eyebrow">把急速花在刀刃上</div><h2 id="leveling-title">同步加点，找到冷却平衡</h2><p>基础冷却越接近，互刷所需的通用急速越低。</p></div><span class="subtle-label"><span data-icon="git-compare-arrows"></span>寒冰 ER · 15 组组合</span></div>
+      <div class="recommendations" id="recommendations"></div>
+      <div class="panel table-panel">
+        <div class="table-heading"><h3>完整加点对照</h3><span id="table-context">按当前海克斯与独立急速实时计算</span></div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="寒冰加点对照表，可横向滚动"><table><caption class="sr-only">寒冰 E 的 5 个等级与 R 的 3 个等级的理论最低急速对照</caption><thead><tr><th scope="col">E 等级</th><th scope="col">R 等级</th><th scope="col">E 基础 CD</th><th scope="col">R 基础 CD</th><th scope="col">无术士</th><th scope="col">有术士</th><th scope="col">当前配置阈值</th><th scope="col">加点操作</th></tr></thead><tbody id="level-table"></tbody></table></div>
+        <p class="table-footnote"><span data-icon="info"></span>“无术士 / 有术士”固定使用文档验收参数：M = 30%、独立急速 = 0、S = 0% / 10%。当前配置列使用左侧参数；应用加点会恢复寒冰 ER 基础 CD。</p>
+      </div>
+      <p class="level-warning"><span data-icon="triangle-alert"></span>同步加点过程中可能暂时失去理论互刷条件；请在升级 E 或 R 后重新检查阈值。</p>
+    </section>
+
+    <section id="mechanics" class="mechanics-section" aria-labelledby="mechanics-title">
+      <div class="section-heading"><div><div class="eyebrow">每一个数值，都有依据</div><h2 id="mechanics-title">理解互刷背后的公式</h2></div><span class="version-badge">模型 v1.0 · 游戏版本未核验</span></div>
+      <div class="mechanics-grid">
+        <article class="panel formula-card"><span class="formula-icon" data-icon="gauge"></span><h3>急速与术士加算</h3><div class="formula">Cᵢ = clamp((H + Xᵢ) / (100 + H + Xᵢ) + S, 0, 1)</div><p>先将通用与独立技能急速换算成冷却缩减，再加上术士比例 S。术士关闭时 S = 0。</p><div class="formula secondary-formula">Tᵢ = Bᵢ × (1 − Cᵢ)</div></article>
+        <article class="panel formula-card"><span class="formula-icon gold" data-icon="repeat-2"></span><h3>基础 CD 返还</h3><div class="formula">Fₐ = Bᵦ × M　 /　Fᵦ = Bₐ × M</div><p>大法师按释放技能的基础 CD 返还给另一技能。返还量不随释放技能的实际冷却变化。</p><div class="formula secondary-formula">Lᵢ = max(0, Tᵢ − Fᵢ)</div></article>
+        <article class="panel formula-card"><span class="formula-icon" data-icon="crosshair"></span><h3>最低成型急速</h3><div class="formula">qᵢ = 1 − Fᵢ / Bᵢ − S</div><p>qᵢ ≤ 0 时需求为 0；qᵢ ≥ 1 时无有限解；其余为 max(0, 100qᵢ / (1 − qᵢ) − Xᵢ)。</p><div class="formula secondary-formula">H最低 = ceil(max(needₐ, needᵦ))</div></article>
+      </div>
+      <details class="panel model-details"><summary><span data-icon="book-open"></span>数据来源与模型边界<span class="details-chevron" data-icon="chevron-down"></span></summary><div class="details-content"><p>英雄数据和海克斯比例来自项目需求文档与用户提供的游戏截图，未独立核验游戏版本。术士使用加算冷却缩减，大法师使用基础 CD 返还模型；二者均为本工具的理论假设。</p><p>寒冰 Q 基础 CD 为 0，依赖普攻叠满 4 层，不能纳入该模型；W 基础 CD 为 18 / 14.5 / 11 / 7.5 / 4 秒；E 为 90 / 80 / 70 / 60 / 50 秒，最多 2 层充能且有 5 秒施放间隔；R 为 100 / 80 / 60 秒。</p><p>E 的充能如何恢复、最短施放间隔、Q/W 是否抢占返还、实际返还目标、施法耗时和游戏版本都需要游戏内实测。静态双技能条件不能据此推断实际无限释放。</p><p>显示结果保留两位小数，计算过程不提前舍入。理论判定沿用参考引擎的 1e−8 浮点容差，最低急速向上取整前使用 1e−9 容差。海克斯关闭时对应比例为 0。</p></div></details>
+    </section>
+  </main>
+  <footer class="site-footer"><a class="footer-brand" href="#"><span data-icon="snowflake"></span>极寒回响</a><p>以计算探索构筑，以实战验证可能。</p><span>非官方玩家工具 · 与 Riot Games 无关联</span></footer>
+  <div id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <noscript><p class="noscript">请启用 JavaScript 以使用本地实时计算器。</p></noscript>
+  <script>/* APP_SCRIPT */</script>
+</body>
+</html>

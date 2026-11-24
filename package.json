@@ -1,0 +1,22 @@
+{
+  "name": "frostlink-ultimate-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "原生 JavaScript LOL 大招流理论计算器，单文件 Cloudflare Worker",
+  "engines": {
+    "node": ">=22.8.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && wrangler dev --local --ip 0.0.0.0 --port 8787",
+    "test": "npm run build && node --test --test-isolation=none tests/*.test.js",
+    "check": "npm test && wrangler deploy --dry-run --outdir .dry-run",
+    "deploy": "npm test && wrangler deploy"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "lucide": "1.70.0",
+    "wrangler": "4.167.0"
+  }
+}
